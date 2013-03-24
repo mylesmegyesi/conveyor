@@ -1,86 +1,20 @@
 (ns conveyor.core
   (:require [clojure.java.io :refer [as-file input-stream as-url]]
             [clojure.string :refer [join replace-first] :as clj-str]
-            [digest :refer [md5]]
             [pantomime.mime :refer [mime-type-of]]
-            [conveyor.filename-utils :refer :all])
+            [conveyor.filename-utils :refer :all]
+            [conveyor.compile :refer [compile-asset]])
   (:import [java.net MalformedURLException]))
-
-(defn- build-asset [requested-asset-path extension asset-body]
-  (let [digest (md5 asset-body)
-        file-name (remove-extension requested-asset-path)]
-    [{:body asset-body
-      :logical-path (add-extension file-name extension)
-      :digest digest
-      :digest-path (add-extension (str file-name "-" digest) extension)}]))
-
-(defn- requested-extension-matches-output-extension [handler]
-  (fn [{:keys [engine found-file-extension requested-asset-path requested-file-extension asset-body]
-        :as context}]
-    (if (and engine
-             (some #(= requested-file-extension %) (:output-extensions engine)))
-      (build-asset requested-asset-path
-                   requested-file-extension
-                   asset-body)
-      (handler context))))
-
-(defn- throw-multipe-output-exensions-with-no-requested-output-extension [{:keys [requested-asset-path found-file-path]}
-                                                               output-extensions]
-  (throw (Exception. (format "Search for \"%s\" found \"%s\". However, you did not request an output extension and the matched engine has multiple output extensions: %s"
-                             requested-asset-path
-                             found-file-path
-                             (join ", " output-extensions)))))
-
-(defn- no-requested-extension-and-one-output-extension [handler]
-  (fn [{:keys [engine requested-asset-path requested-file-extension asset-body]
-        :as context}]
-    (let [output-extensions (:output-extensions engine)]
-      (if (and engine (= requested-file-extension ""))
-        (if (= 1 (count output-extensions))
-          (build-asset requested-asset-path
-                       (first output-extensions)
-                       asset-body)
-          (throw-multipe-output-exensions-with-no-requested-output-extension
-            context output-extensions))
-        (handler context)))))
-
-(defn- no-engine-for-file [handler]
-  (fn [{:keys [engine requested-asset-path requested-file-extension found-file-extension asset-body]
-        :as context}]
-    (if (and (nil? engine)
-             (= found-file-extension requested-file-extension))
-      (build-asset requested-asset-path
-                   requested-file-extension
-                   asset-body)
-      (handler context))))
 
 (defn- null-handler [context] nil)
 
-(defn- engines-for-extension [engines input-extension output-extension]
-  (filter
-    (fn [engine]
-      (and (some #(= % input-extension) (:input-extensions engine))
-           (if (empty? output-extension)
-             true
-             (some #(= % output-extension) (:output-extensions engine)))))
-    engines))
-
-(defn- engine-for-extension [engines input-extension output-extension]
-  (let [engines (engines-for-extension engines input-extension output-extension)]
-    (if (> (count engines) 1)
-      (throw (Exception. (format "Found multiple engines to handle input extension \"%s\" and output extension \"%s\""
-                                 input-extension output-extension)))
-      (first engines))))
-
-(defn- build-serve-context [asset-body found-file-path engines requested-asset-path requested-file-extension]
-  (let [found-file-extension (get-extension found-file-path)
-        engine (engine-for-extension engines found-file-extension requested-file-extension)]
-    {:asset-body asset-body
-     :found-file-path found-file-path
-     :found-file-extension found-file-extension
-     :requested-asset-path requested-asset-path
-     :requested-file-extension requested-file-extension
-     :engine engine}))
+(defn- build-serve-context [config asset-body found-file-path requested-file-path requested-file-extension]
+  {:asset-body asset-body
+   :found-file-path found-file-path
+   :found-file-extension (get-extension found-file-path)
+   :config config
+   :requested-file-path requested-file-path
+   :requested-file-extension requested-file-extension})
 
 (defn- read-stream [stream]
   (let [sb (StringBuilder.)]
@@ -109,8 +43,21 @@
     (when-let [file (read-resource-file file-path)]
       file)))
 
-(defn- read-files [{:keys [load-paths engines]} asset-path]
-  (let [extensions (distinct (mapcat :input-extensions engines))]
+(defn- extensions-for-path [path compilers requested-file-extension]
+  (distinct
+    (mapcat
+      :input-extensions
+      (if (empty? requested-file-extension)
+        compilers
+        (filter
+          (fn [compiler]
+            (some
+              #(= % requested-file-extension)
+              (:output-extensions compiler)))
+          compilers)))))
+
+(defn- read-files [{:keys [load-paths compilers]} asset-path requested-file-extension]
+  (let [extensions (extensions-for-path asset-path compilers requested-file-extension)]
     (reduce
       (fn [assets file-path]
         (if-let [contents (read-file file-path)]
@@ -132,15 +79,15 @@
 (defn- format-asset-path [asset-path]
   (format "\"%s\"" asset-path))
 
-(defn- throw-multiple-found-exception [requested-asset-path found-paths]
+(defn- throw-multiple-found-exception [requested-file-path found-paths]
   (throw
     (Exception.
       (format "Search for %s returned multiple results: %s"
-              (format-asset-path requested-asset-path)
+              (format-asset-path requested-file-path)
               (join ", " (map format-asset-path found-paths))))))
 
-(defn- read-asset [config asset-path on-asset-read]
-  (let [found-assets (read-files config asset-path)
+(defn- read-asset [config asset-path requested-file-extension on-asset-read]
+  (let [found-assets (read-files config asset-path requested-file-extension)
         num-found-assets (count found-assets)]
     (cond
       (> num-found-assets 1)
@@ -149,18 +96,16 @@
       (let [{:keys [body full-path]} (first found-assets)]
         (on-asset-read body full-path)))))
 
-(defn- serve-asset [config requested-asset-path requested-file-extension]
-  (read-asset config requested-asset-path
+(defn- serve-asset [config requested-file-path requested-file-extension]
+  (read-asset config requested-file-path requested-file-extension
     (fn [asset-body found-file-path]
       ((->
          null-handler
-         no-requested-extension-and-one-output-extension
-         requested-extension-matches-output-extension
-         no-engine-for-file)
-         (build-serve-context asset-body
+         compile-asset)
+         (build-serve-context config
+                              asset-body
                               found-file-path
-                              (:engines config)
-                              requested-asset-path
+                              requested-file-path
                               requested-file-extension)))))
 
 (defn- remove-asset-digest [path extension]

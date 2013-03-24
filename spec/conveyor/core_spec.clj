@@ -99,116 +99,116 @@
     (it "returns nil if the asset could not be found"
       (should-be-nil (find-asset {} "non-existant-file")))
 
-    (it "finds assets using the output extensions given by engines"
-      (let [asset (first (find-asset (add-engine-config @config (configure-engine
+    (it "finds assets using the output extensions given by compilers"
+      (let [asset (first (find-asset (add-compiler-config @config (configure-compiler
                                                                   (add-input-extension "fake")
                                                                   (add-output-extension "fake-output"))) "test2.fake-output"))]
         (should= "Some fake thing\n" (:body asset))
         (should= "test2.fake-output" (:logical-path asset))
         (should= "test2-979d812cfd0a7dc744af9e083a63ff10.fake-output" (:digest-path asset))))
 
-    (it "file that does not have an extension and matches an engine with one output extension"
-      (let [asset (first (find-asset (add-engine-config @config (configure-engine
+    (it "file that does not have an extension and matches an compiler with one output extension"
+      (let [asset (first (find-asset (add-compiler-config @config (configure-compiler
                                                                           (add-input-extension "fake")
                                                                           (add-output-extension "fake-output"))) "test2"))]
         (should= "Some fake thing\n" (:body asset))
         (should= "test2.fake-output" (:logical-path asset))
         (should= "test2-979d812cfd0a7dc744af9e083a63ff10.fake-output" (:digest-path asset))))
 
-    (it "returns nil if the file is found, but the requested file extension does not match any engines output extensions"
-      (should-be-nil (first (find-asset (add-engine-config @config (configure-engine
+    (it "returns nil if the file is found, but the requested file extension does not match any compilers output extensions"
+      (should-be-nil (first (find-asset (add-compiler-config @config (configure-compiler
                                                                      (add-input-extension "fake")
                                                                      (add-output-extension "fake-output"))) "test2.bad-ext"))))
 
-    (it "finds an asset using any of an engines extensions"
-      (let [asset (first (find-asset (add-engine-config @config (configure-engine
+    (it "finds an asset using any of an compilers extensions"
+      (let [asset (first (find-asset (add-compiler-config @config (configure-compiler
                                                                   (add-input-extension "fake")
                                                                   (add-input-extension "fake1")
                                                                   (add-output-extension "fake-output"))) "test3.fake-output"))]
         (should= "Some fake thing1\n" (:body asset))
         (should= "test3.fake-output" (:logical-path asset))))
 
-    (it "throws an exception if an engine has two extensions and a file for each extension is found"
+    (it "throws an exception if an compiler has two extensions and a file for each extension is found"
       (let [base-path (directory-path "test_fixtures/public/javascripts")]
         (should-throw
           Exception (format "Search for \"test4.fake-output\" returned multiple results: \"%s\", \"%s\""
                             (str base-path "/test4.fake")
                             (str base-path "/test4.fake1"))
-          (find-asset (add-engine-config @config (configure-engine
+          (find-asset (add-compiler-config @config (configure-compiler
                                                    (add-input-extension "fake")
                                                    (add-input-extension "fake1")
                                                    (add-output-extension "fake-output"))) "test4.fake-output"))))
 
-    (it "returns the asset if an engine has two extensions and a file for each extension is found and a file with the correct output extension is found"
-      (let [asset (first (find-asset (add-engine-config @config (configure-engine
+    (it "returns the asset if an compiler has two extensions and a file for each extension is found and a file with the correct output extension is found"
+      (let [asset (first (find-asset (add-compiler-config @config (configure-compiler
                                                                   (add-input-extension "fake")
                                                                   (add-input-extension "fake1")
                                                                   (add-output-extension "fake-output"))) "test5.fake-output"))]
         (should= "test5 fake-output\n" (:body asset))
         (should= "test5.fake-output" (:logical-path asset))))
 
-    (it "an engine with multiple extensions"
-      (let [configured-engine (add-engine-config @config (configure-engine
+    (it "an compiler with multiple extensions"
+      (let [configured-compiler (add-compiler-config @config (configure-compiler
                                                            (add-input-extension "fake")
                                                            (add-input-extension "fake2")
                                                            (add-output-extension "fake-output")))]
-      (should-be-nil (first (find-asset configured-engine "test2.bad-ext")))))
+      (should-be-nil (first (find-asset configured-compiler "test2.bad-ext")))))
 
-    (it "an engine with multiple output extensions"
-      (let [configured-engine (add-engine-config @config (configure-engine
+    (it "an compiler with multiple output extensions"
+      (let [configured-compiler (add-compiler-config @config (configure-compiler
                                                            (add-input-extension "markdown")
                                                            (add-output-extension "html")
                                                            (add-output-extension "txt")))
-            html-asset (first (find-asset configured-engine "multiple_outputs.html"))
-            txt-asset (first (find-asset configured-engine "multiple_outputs.txt"))]
+            html-asset (first (find-asset configured-compiler "multiple_outputs.html"))
+            txt-asset (first (find-asset configured-compiler "multiple_outputs.txt"))]
         (should= "Multiple outputs\n" (:body html-asset))
         (should= "multiple_outputs.html" (:logical-path html-asset))
         (should= "Multiple outputs\n" (:body txt-asset))
         (should= "multiple_outputs.txt" (:logical-path txt-asset))))
 
-    (it "file that does not have an extension and matches an engine with more than one output extension - must request using an extension"
+    (it "file that does not have an extension and matches an compiler with more than one output extension - must request using an extension"
       (let [base-path (directory-path "test_fixtures/public/javascripts")
-            configured-engine (add-engine-config @config (configure-engine
+            configured-compiler (add-compiler-config @config (configure-compiler
                                                            (add-input-extension "markdown")
                                                            (add-output-extension "html")
                                                            (add-output-extension "txt")))
-            html-asset (first (find-asset configured-engine "multiple_outputs" "html"))
-            txt-asset (first (find-asset configured-engine "multiple_outputs" "txt"))]
+            html-asset (first (find-asset configured-compiler "multiple_outputs" "html"))
+            txt-asset (first (find-asset configured-compiler "multiple_outputs" "txt"))]
         (should= "Multiple outputs\n" (:body html-asset))
         (should= "multiple_outputs.html" (:logical-path html-asset))
         (should= "Multiple outputs\n" (:body txt-asset))
         (should= "multiple_outputs.txt" (:logical-path txt-asset))
         (should-throw
           Exception
-          (format "Search for \"multiple_outputs\" found \"%s\". However, you did not request an output extension and the matched engine has multiple output extensions: html, txt"
+          (format "Search for \"multiple_outputs\" found \"%s\". However, you did not request an output extension and the matched compiler has multiple output extensions: html, txt"
                   (str base-path "/multiple_outputs.markdown"))
-          (find-asset configured-engine "multiple_outputs"))))
+          (find-asset configured-compiler "multiple_outputs"))))
 
-    (it "mutliple engines match on input type but only one matches on output type"
-      (let [first-configured-engine (add-engine-config @config (configure-engine
+    (it "mutliple compilers match on input type but only one matches on output type"
+      (let [first-configured-compiler (add-compiler-config @config (configure-compiler
                                                            (add-input-extension "markdown")
                                                            (add-output-extension "html")))
-            configured-engine (add-engine-config first-configured-engine (configure-engine
+            configured-compiler (add-compiler-config first-configured-compiler (configure-compiler
                                                                            (add-input-extension "markdown")
                                                                            (add-output-extension "txt")))
-            html-asset (first (find-asset configured-engine "multiple_outputs.html"))
-            txt-asset (first (find-asset configured-engine "multiple_outputs.txt"))]
+            html-asset (first (find-asset configured-compiler "multiple_outputs.html"))
+            txt-asset (first (find-asset configured-compiler "multiple_outputs.txt"))]
         (should= "Multiple outputs\n" (:body html-asset))
         (should= "multiple_outputs.html" (:logical-path html-asset))
         (should= "Multiple outputs\n" (:body txt-asset))
         (should= "multiple_outputs.txt" (:logical-path txt-asset))))
 
-    (it "mutliple engines match on input and output type"
-      (let [first-configured-engine (add-engine-config @config (configure-engine
+    (it "mutliple compilers match on input and output type"
+      (let [first-configured-compiler (add-compiler-config @config (configure-compiler
                                                            (add-input-extension "markdown")
                                                            (add-output-extension "html")))
-            configured-engine (add-engine-config first-configured-engine (configure-engine
+            configured-compiler (add-compiler-config first-configured-compiler (configure-compiler
                                                                            (add-input-extension "markdown")
                                                                            (add-output-extension "html")))]
         (should-throw
           Exception
-          "Found multiple engines to handle input extension \"markdown\" and output extension \"html\""
-          (find-asset configured-engine "multiple_outputs.html"))))
+          "Found multiple compilers to handle input extension \"markdown\" and output extension \"html\""
+          (find-asset configured-compiler "multiple_outputs.html"))))
 
     (it "finds an asset using the digest path"
       (let [asset (first (find-asset @config "test1.js"))]

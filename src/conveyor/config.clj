@@ -8,8 +8,8 @@
 (defn- append-to-key [m key value]
   (update-in m [key] #(conj % value)))
 
-(defn add-engine-config [config engine-config]
-  (append-to-key config :engines engine-config))
+(defn add-compiler-config [config compiler-config]
+  (append-to-key config :compilers compiler-config))
 
 (defn add-output-extension [config extension]
   (append-to-key config :output-extensions extension))
@@ -17,12 +17,12 @@
 (defn add-input-extension [config extension]
   (append-to-key config :input-extensions extension))
 
-(def default-engine-config
+(def default-compiler-config
   {:input-extensions []
    :output-extensions []})
 
-(defmacro configure-engine [& body]
-  `(-> default-engine-config
+(defmacro configure-compiler [& body]
+  `(-> default-compiler-config
      ~@body))
 
 (defn resource-directory-path [directory-path resource-in-directory]
@@ -54,7 +54,7 @@
 
 (def default-pipeline-config
   {:load-paths []
-   :engines []
+   :compilers []
    :prefix "/"})
 
 (defmacro configure-asset-pipeline [& body]

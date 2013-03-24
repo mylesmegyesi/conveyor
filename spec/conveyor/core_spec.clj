@@ -62,6 +62,12 @@
     (with config (configure-asset-pipeline
                    (add-directory-to-load-path "test_fixtures/public/javascripts")))
 
+    (it "throws an exception if the extension of the file and requested output extension do not match"
+      (should-throw
+        Exception
+        "The extension of the asset \"test.js\" does not match the requested output extension, \"css\""
+        (find-asset @config "test.js" "css")))
+
     (it "finds an asset and returns the body"
       (let [found-assets (find-asset @config "test1.js")
             asset (first found-assets)]
@@ -117,8 +123,8 @@
 
     (it "returns nil if the file is found, but the requested file extension does not match any compilers output extensions"
       (should-be-nil (first (find-asset (add-compiler-config @config (configure-compiler
-                                                                     (add-input-extension "fake")
-                                                                     (add-output-extension "fake-output"))) "test2.bad-ext"))))
+                                                                       (add-input-extension "fake")
+                                                                       (add-output-extension "fake-output"))) "test2.bad-ext"))))
 
     (it "finds an asset using any of an compilers extensions"
       (let [asset (first (find-asset (add-compiler-config @config (configure-compiler

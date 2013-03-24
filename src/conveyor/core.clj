@@ -117,16 +117,31 @@
           [digest (str without-match "." extension)]))
       [nil path])))
 
+(defn- throw-extension-does-not-match [path extension]
+  (throw
+    (Exception.
+      (format
+        "The extension of the asset \"%s\" does not match the requested output extension, \"%s\""
+        path extension))))
+
+(defn- extension-matches? [path extension]
+  (let [file-extension (get-extension path)]
+    (if (empty? file-extension)
+      true
+      (= file-extension extension))))
+
 (defn find-asset
   ([config path]
     (find-asset config path (get-extension path)))
   ([config path extension]
-   (let [[digest path] (remove-asset-digest path extension)
-         assets (serve-asset config path extension)]
-     (if digest
-       (when (= digest (:digest (last assets)))
-         assets)
-       assets))))
+    (if (extension-matches? path extension)
+      (let [[digest path] (remove-asset-digest path extension)
+            assets (serve-asset config path extension)]
+        (if digest
+          (when (= digest (:digest (last assets)))
+            assets)
+          assets))
+      (throw-extension-does-not-match path extension))))
 
 (defn- remove-prefix [uri prefix]
   (let [without-prefix (replace-first uri prefix "")]

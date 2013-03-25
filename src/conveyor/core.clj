@@ -43,38 +43,15 @@
     (when-let [file (read-resource-file file-path)]
       file)))
 
-(defn- extensions-for-path [path compilers requested-file-extension]
-  (distinct
-    (mapcat
-      :input-extensions
-      (if (empty? requested-file-extension)
-        compilers
-        (filter
-          (fn [compiler]
-            (some
-              #(= % requested-file-extension)
-              (:output-extensions compiler)))
-          compilers)))))
-
-(defn- read-files [{:keys [load-paths compilers]} asset-path requested-file-extension]
-  (let [extensions (extensions-for-path asset-path compilers requested-file-extension)]
-    (reduce
-      (fn [assets file-path]
-        (if-let [contents (read-file file-path)]
-          (conj assets {:body contents
-                        :full-path asset-path})
-          (let [base-path (remove-extension file-path)]
-            (reduce
-              (fn [assets extension]
-                (let [path (add-extension base-path extension)]
-                  (if-let [contents (read-file path)]
-                    (conj assets {:body contents
-                                  :full-path path})
-                    assets)))
-              assets
-              extensions))))
-      []
-      (map #(file-join % asset-path) load-paths))))
+(defn- read-files [file-paths]
+  (reduce
+    (fn [files path]
+      (if-let [contents (read-file path)]
+        (conj files {:body contents
+                     :full-path path})
+        files))
+    []
+    file-paths))
 
 (defn- format-asset-path [asset-path]
   (format "\"%s\"" asset-path))
@@ -86,8 +63,58 @@
               (format-asset-path requested-file-path)
               (join ", " (map format-asset-path found-paths))))))
 
+(defn- files-with-compiler-extensions [paths file-path extensions]
+  (let [base-path (remove-extension file-path)]
+    (reduce
+      (fn [paths extension]
+        (conj paths (add-extension base-path extension)))
+      paths
+      extensions)))
+
+(defn- index-file [paths file-path extensions]
+  (if (empty? (get-extension file-path))
+    (files-with-compiler-extensions paths (str file-path "/index") extensions)
+    paths))
+
+(defn requested-file-path [paths file-path requested-file-extension]
+  (if (empty? (get-extension file-path))
+    (if (empty? requested-file-extension)
+      paths
+      (conj paths (add-extension "." requested-file-extension)))
+    (conj paths file-path)))
+
+(defn- extensions-from-compilers [compilers]
+  (distinct
+    (concat
+      (mapcat :input-extensions compilers)
+      (mapcat :output-extensions compilers))))
+
+(defn- extensions-for-path [path compilers requested-file-extension]
+  (extensions-from-compilers
+    (if (empty? requested-file-extension)
+      compilers
+      (filter
+        (fn [compiler]
+          (some
+            #(= % requested-file-extension)
+            (:output-extensions compiler)))
+        compilers))))
+
+(defn- build-possible-files [{:keys [load-paths compilers]} asset-path requested-file-extension]
+  (let [extensions (extensions-for-path asset-path compilers requested-file-extension)]
+    (distinct
+      (reduce
+        (fn [paths file-path]
+          (-> paths
+            (requested-file-path file-path requested-file-extension)
+            (files-with-compiler-extensions file-path extensions)
+            (index-file file-path extensions)))
+        []
+        (map #(file-join % asset-path) load-paths)))))
+
 (defn- read-asset [config asset-path requested-file-extension on-asset-read]
-  (let [found-assets (read-files config asset-path requested-file-extension)
+  (let [files-to-read (build-possible-files config asset-path requested-file-extension)
+        found-assets (read-files files-to-read)
         num-found-assets (count found-assets)]
     (cond
       (> num-found-assets 1)

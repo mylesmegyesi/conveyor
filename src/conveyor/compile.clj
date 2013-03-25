@@ -44,6 +44,6 @@
                      asset-body))
       :else
       (build-asset requested-file-path
-                   requested-file-extension
+                   found-file-extension
                    asset-body)))))
 

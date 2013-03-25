@@ -107,16 +107,16 @@
 
     (it "finds assets using the output extensions given by compilers"
       (let [asset (first (find-asset (add-compiler-config @config (configure-compiler
-                                                                  (add-input-extension "fake")
-                                                                  (add-output-extension "fake-output"))) "test2.fake-output"))]
+                                                                    (add-input-extension "fake")
+                                                                    (add-output-extension "fake-output"))) "test2.fake-output"))]
         (should= "Some fake thing\n" (:body asset))
         (should= "test2.fake-output" (:logical-path asset))
         (should= "test2-979d812cfd0a7dc744af9e083a63ff10.fake-output" (:digest-path asset))))
 
     (it "file that does not have an extension and matches an compiler with one output extension"
       (let [asset (first (find-asset (add-compiler-config @config (configure-compiler
-                                                                          (add-input-extension "fake")
-                                                                          (add-output-extension "fake-output"))) "test2"))]
+                                                                    (add-input-extension "fake")
+                                                                    (add-output-extension "fake-output"))) "test2"))]
         (should= "Some fake thing\n" (:body asset))
         (should= "test2.fake-output" (:logical-path asset))
         (should= "test2-979d812cfd0a7dc744af9e083a63ff10.fake-output" (:digest-path asset))))
@@ -128,9 +128,9 @@
 
     (it "finds an asset using any of an compilers extensions"
       (let [asset (first (find-asset (add-compiler-config @config (configure-compiler
-                                                                  (add-input-extension "fake")
-                                                                  (add-input-extension "fake1")
-                                                                  (add-output-extension "fake-output"))) "test3.fake-output"))]
+                                                                    (add-input-extension "fake")
+                                                                    (add-input-extension "fake1")
+                                                                    (add-output-extension "fake-output"))) "test3.fake-output"))]
         (should= "Some fake thing1\n" (:body asset))
         (should= "test3.fake-output" (:logical-path asset))))
 
@@ -145,13 +145,17 @@
                                                    (add-input-extension "fake1")
                                                    (add-output-extension "fake-output"))) "test4.fake-output"))))
 
-    (it "returns the asset if an compiler has two extensions and a file for each extension is found and a file with the correct output extension is found"
-      (let [asset (first (find-asset (add-compiler-config @config (configure-compiler
-                                                                  (add-input-extension "fake")
-                                                                  (add-input-extension "fake1")
-                                                                  (add-output-extension "fake-output"))) "test5.fake-output"))]
-        (should= "test5 fake-output\n" (:body asset))
-        (should= "test5.fake-output" (:logical-path asset))))
+    (it "throws an exception if a compiler has two input extensions and a file for both extensions + an output extension are found"
+      (let [base-path (directory-path "test_fixtures/public/javascripts")]
+        (should-throw
+          Exception (format "Search for \"test5.fake-output\" returned multiple results: \"%s\", \"%s\", \"%s\""
+                            (str base-path "/test5.fake-output")
+                            (str base-path "/test5.fake")
+                            (str base-path "/test5.fake1"))
+          (find-asset (add-compiler-config @config (configure-compiler
+                                                     (add-input-extension "fake")
+                                                     (add-input-extension "fake1")
+                                                     (add-output-extension "fake-output"))) "test5.fake-output"))))
 
     (it "an compiler with multiple extensions"
       (let [configured-compiler (add-compiler-config @config (configure-compiler
@@ -224,7 +228,33 @@
       (let [asset (first (find-asset @config "test1.js"))]
         (should-be-nil (first (find-asset @config "test1-200368af90cc4c6f4f1ddf36f97a2bad.js")))))
 
-    (it "finds an index file")
+    (it "finds an index file"
+      (let [config (add-compiler-config @config (configure-compiler
+                                                  (add-input-extension "coffee")
+                                                  (add-output-extension "js")))
+            found-assets (find-asset config "test6")
+            asset (first found-assets)]
+        (should= "var index = 1;\n" (:body asset))
+        (should= "test6.js" (:logical-path asset))))
+
+    (it "finds an index file with a matching output extension"
+      (let [config (add-compiler-config @config (configure-compiler
+                                                  (add-input-extension "coffee")
+                                                  (add-output-extension "js")))
+            found-assets (find-asset config "test7")
+            asset (first found-assets)]
+        (should= "var test7 = 1;\n" (:body asset))
+        (should= "test7.js" (:logical-path asset))))
+
+    (it "throws an exception if a normal file and index file are both found"
+      (let [base-path (directory-path "test_fixtures/public/javascripts")]
+        (should-throw
+          Exception (format "Search for \"test8\" returned multiple results: \"%s\", \"%s\""
+                            (str base-path "/test8.js")
+                            (str base-path "/test8/index.js"))
+          (find-asset (add-compiler-config @config (configure-compiler
+                                                     (add-input-extension "coffee")
+                                                     (add-output-extension "js"))) "test8"))))
 
     )
 

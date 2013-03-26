@@ -11,5 +11,6 @@
                                   [ring-mock "0.1.3"]]
                    :main speclj.main
                    :resource-paths ["test_fixtures/resources"]}}
-  :plugins [[speclj "2.5.0"]]
+  :plugins [[speclj "2.5.0"]
+            [lein-kibit "0.0.8"]]
   :test-paths ["spec"])

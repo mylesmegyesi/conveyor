@@ -2,9 +2,9 @@
   (:require [digest :refer [md5]]
             [conveyor.filename-utils :refer :all]))
 
-(defn build-asset [requested-file-path extension asset-body]
+(defn build-asset [requested-path extension asset-body]
   (let [digest (md5 asset-body)
-        file-name (remove-extension requested-file-path)]
+        file-name (remove-extension requested-path)]
     [{:body asset-body
       :logical-path (add-extension file-name extension)
       :digest digest

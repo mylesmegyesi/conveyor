@@ -1,12 +1,13 @@
 (ns conveyor.compile
-  (:require [conveyor.asset :refer [build-asset]]
-            [clojure.string :refer [join]]))
+  (:require [clojure.string :refer [join]]
+            [conveyor.asset :refer [build-asset]]
+            [conveyor.context :refer [set-asset-extension]]))
 
-(defn- throw-multiple-output-exensions-with-no-requested-output-extension [{:keys [requested-file-path found-file-path]}
+(defn- throw-multiple-output-exensions-with-no-requested-output-extension [{:keys [requested-path found-path]}
                                                                output-extensions]
   (throw (Exception. (format "Search for \"%s\" found \"%s\". However, you did not request an output extension and the matched compiler has multiple output extensions: %s"
-                             requested-file-path
-                             found-file-path
+                             requested-path
+                             found-path
                              (join ", " output-extensions)))))
 
 (defn- throw-multiple-compilers [input-extension output-extension]
@@ -22,28 +23,21 @@
              (some #(= % output-extension) (:output-extensions compiler)))))
     compilers))
 
-(defn compile-asset [handler]
-  (fn [{:keys [config found-file-extension requested-file-extension requested-file-path asset-body] :as context}]
-    (let [compilers (compilers-for-extension (:compilers config) found-file-extension requested-file-extension)
-          num-compilers (count compilers)
-          compiler (first compilers)
-          output-extensions (:output-extensions compiler)]
+(defn compile-asset [{:keys [config found-extension requested-extension requested-path] :as context}]
+  (let [compilers (compilers-for-extension (:compilers config) found-extension requested-extension)
+        num-compilers (count compilers)
+        compiler (first compilers)
+        output-extensions (:output-extensions compiler)]
     (cond
       (> num-compilers 1)
-      (throw-multiple-compilers found-file-extension requested-file-extension)
+      (throw-multiple-compilers found-extension requested-extension)
       (= num-compilers 1)
-      (if (empty? requested-file-extension)
+      (if (empty? requested-extension)
         (if (= 1 (count output-extensions))
-          (build-asset requested-file-path
-                       (first output-extensions)
-                       asset-body)
+          (set-asset-extension context (first output-extensions))
           (throw-multiple-output-exensions-with-no-requested-output-extension
             context output-extensions))
-        (build-asset requested-file-path
-                     requested-file-extension
-                     asset-body))
+        (set-asset-extension context requested-extension))
       :else
-      (build-asset requested-file-path
-                   found-file-extension
-                   asset-body)))))
+      (set-asset-extension context found-extension))))
 

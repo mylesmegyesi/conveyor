@@ -40,8 +40,7 @@
 (defn- read-file [file-path]
   (if-let [file (read-normal-file file-path)]
     file
-    (when-let [file (read-resource-file file-path)]
-      file)))
+    (read-resource-file file-path)))
 
 (defn- read-files [file-paths]
   (reduce

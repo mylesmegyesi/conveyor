@@ -17,9 +17,13 @@
 (defn add-input-extension [config extension]
   (append-to-key config :input-extensions extension))
 
+(defn set-compiler [config compiler]
+  (assoc config :compiler compiler))
+
 (def default-compiler-config
   {:input-extensions []
-   :output-extensions []})
+   :output-extensions []
+   :compiler (fn [config body file-path input-extension output-extension] body)})
 
 (defmacro configure-compiler [& body]
   `(-> default-compiler-config
@@ -57,6 +61,6 @@
    :compilers []
    :prefix "/"})
 
-(defmacro configure-asset-pipeline [& body]
+(defmacro thread-pipeline-config [& body]
   `(-> default-pipeline-config
      ~@body))

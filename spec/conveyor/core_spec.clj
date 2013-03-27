@@ -4,6 +4,9 @@
             [conveyor.config :refer :all]
             [conveyor.core :refer :all]))
 
+(defn test-compiler [config body filename input-extension output-extension]
+  (str body "compiled with " filename ":" input-extension ":" output-extension))
+
 (describe "conveyor.core"
 
   (context "resource-directory-path"
@@ -59,7 +62,7 @@
 
   (context "find-asset"
 
-    (with config (configure-asset-pipeline
+    (with config (thread-pipeline-config
                    (add-directory-to-load-path "test_fixtures/public/javascripts")))
 
     (it "throws an exception if the extension of the file and requested output extension do not match"
@@ -126,12 +129,21 @@
                                                                        (add-input-extension "fake")
                                                                        (add-output-extension "fake-output"))) "test2.bad-ext"))))
 
-    (it "finds an asset using any of an compilers extensions"
+    (it "finds an asset using any of the configured compilers extensions"
       (let [asset (first (find-asset (add-compiler-config @config (configure-compiler
                                                                     (add-input-extension "fake")
                                                                     (add-input-extension "fake1")
                                                                     (add-output-extension "fake-output"))) "test3.fake-output"))]
         (should= "Some fake thing1\n" (:body asset))
+        (should= "test3.fake-output" (:logical-path asset))))
+
+    (it "compiles the asset"
+      (let [base-path (directory-path "test_fixtures/public/javascripts")
+            asset (first (find-asset (add-compiler-config @config (configure-compiler
+                                                                    (set-compiler test-compiler)
+                                                                    (add-input-extension "fake1")
+                                                                    (add-output-extension "fake-output"))) "test3.fake-output"))]
+        (should= (format "Some fake thing1\ncompiled with %s:fake1:fake-output" (str base-path "/test3.fake1")) (:body asset))
         (should= "test3.fake-output" (:logical-path asset))))
 
     (it "throws an exception if an compiler has two extensions and a file for each extension is found"
@@ -193,6 +205,15 @@
           (format "Search for \"multiple_outputs\" found \"%s\". However, you did not request an output extension and the matched compiler has multiple output extensions: html, txt"
                   (str base-path "/multiple_outputs.markdown"))
           (find-asset configured-compiler "multiple_outputs"))))
+
+    (it "compiles the asset for a file that has no requested extension and one output extension"
+      (let [base-path (directory-path "test_fixtures/public/javascripts")
+            asset (first (find-asset (add-compiler-config @config (configure-compiler
+                                                                    (set-compiler test-compiler)
+                                                                    (add-input-extension "fake1")
+                                                                    (add-output-extension "fake-output"))) "test3"))]
+        (should= (format "Some fake thing1\ncompiled with %s:fake1:fake-output" (str base-path "/test3.fake1")) (:body asset))
+        (should= "test3.fake-output" (:logical-path asset))))
 
     (it "mutliple compilers match on input type but only one matches on output type"
       (let [first-configured-compiler (add-compiler-config @config (configure-compiler
@@ -260,7 +281,7 @@
 
   (context "wrap-asset-pipeline middleware"
 
-    (with config (configure-asset-pipeline
+    (with config (thread-pipeline-config
                    (add-directory-to-load-path "test_fixtures/public/javascripts")
                    (add-directory-to-load-path "test_fixtures/public/images")
                    (add-directory-to-load-path "test_fixtures/public/stylesheets")))
@@ -306,7 +327,7 @@
           (handler (mr/request :get "/joodo.png")))))
 
     (it "reads a resource png file"
-      (let [config (configure-asset-pipeline
+      (let [config (thread-pipeline-config
                      (add-resource-directory-to-load-path "images" "joodo.png"))
             handler (wrap-asset-pipeline (fn [_] :not-found) config)
             expected-asset (first (find-asset config "joodo.png"))]

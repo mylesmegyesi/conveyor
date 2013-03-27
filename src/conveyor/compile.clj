@@ -1,7 +1,7 @@
 (ns conveyor.compile
   (:require [clojure.string :refer [join]]
             [conveyor.asset :refer [build-asset]]
-            [conveyor.context :refer [set-asset-extension]]))
+            [conveyor.context :refer :all]))
 
 (defn- throw-multiple-output-exensions-with-no-requested-output-extension [{:keys [requested-path found-path]}
                                                                output-extensions]
@@ -23,6 +23,16 @@
              (some #(= % output-extension) (:output-extensions compiler)))))
     compilers))
 
+(defn- do-compile [context compiler-fn output-extension]
+  (-> context
+    (set-asset-body (compiler-fn
+                      (get-config context)
+                      (get-asset-body context)
+                      (get-found-path context)
+                      (get-found-extension context)
+                      output-extension))
+    (set-asset-extension output-extension)))
+
 (defn compile-asset [{:keys [config found-extension requested-extension requested-path] :as context}]
   (let [compilers (compilers-for-extension (:compilers config) found-extension requested-extension)
         num-compilers (count compilers)
@@ -34,10 +44,10 @@
       (= num-compilers 1)
       (if (empty? requested-extension)
         (if (= 1 (count output-extensions))
-          (set-asset-extension context (first output-extensions))
+          (do-compile context (:compiler compiler) (first output-extensions))
           (throw-multiple-output-exensions-with-no-requested-output-extension
             context output-extensions))
-        (set-asset-extension context requested-extension))
+        (do-compile context (:compiler compiler) requested-extension))
       :else
       (set-asset-extension context found-extension))))
 

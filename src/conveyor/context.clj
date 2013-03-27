@@ -38,5 +38,11 @@
 (defn get-requested-extension [context]
   (:requested-extension context))
 
+(defn get-found-extension [context]
+  (:found-extension context))
+
+(defn get-found-path [context]
+  (:found-path context))
+
 (defn get-config [context]
   (:config context))

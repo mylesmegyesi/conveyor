@@ -101,6 +101,20 @@
         (should= (format "Some fake thing1\ncompiled with %s:fake1:fake-output" (str base-path "/test3.fake1")) (:body asset))
         (should= "test3.fake-output" (:logical-path asset))))
 
+    (it "binds the current config"
+      (let [bound-config (atom nil)
+            config (add-compiler-config
+                     @config
+                     (configure-compiler
+                       (add-input-extension "fake1")
+                       (add-output-extension "fake-output")
+                       (set-compiler
+                         (fn [config body filename input-extension output-extension]
+                           (reset! bound-config *current-config*)
+                           body))))
+            _ (find-asset config "test3.fake-output")]
+        (should= config @bound-config)))
+
     (it "throws an exception if an compiler has two extensions and a file for each extension is found"
       (let [base-path (directory-path "test_fixtures/public/javascripts")]
         (should-throw
@@ -108,9 +122,9 @@
                             (str base-path "/test4.fake")
                             (str base-path "/test4.fake1"))
           (find-asset (add-compiler-config @config (configure-compiler
-                                                   (add-input-extension "fake")
-                                                   (add-input-extension "fake1")
-                                                   (add-output-extension "fake-output"))) "test4.fake-output"))))
+                                                     (add-input-extension "fake")
+                                                     (add-input-extension "fake1")
+                                                     (add-output-extension "fake-output"))) "test4.fake-output"))))
 
     (it "throws an exception if a compiler has two input extensions and a file for both extensions + an output extension are found"
       (let [base-path (directory-path "test_fixtures/public/javascripts")]

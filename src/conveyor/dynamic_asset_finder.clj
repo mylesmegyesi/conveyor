@@ -1,10 +1,11 @@
 (ns conveyor.dynamic-asset-finder
-  (:require [clojure.string :refer [join]]
+  (:require [clojure.string :refer [join] :as clj-str]
             [clojure.java.io :refer [as-file input-stream as-url]]
             [digest :refer [md5]]
             [conveyor.compile :refer [compile-asset]]
             [conveyor.context :refer :all]
-            [conveyor.filename-utils :refer :all])
+            [conveyor.filename-utils :refer :all]
+            [conveyor.config :refer [*current-config*]])
   (:import [java.net MalformedURLException]))
 
 (defn- build-asset [requested-path extension asset-body]
@@ -130,12 +131,9 @@
             (set-found-path full-path)
             (set-found-extension (get-extension full-path))))))))
 
-(defn find-asset [config path extension]
+(defn- serve-asset [context]
   (read-asset
-    (make-serve-context
-      (set-config config)
-      (set-requested-path path)
-      (set-requested-extension extension))
+    context
     (fn [context]
       (-> context
         compile-asset
@@ -144,4 +142,40 @@
                 (get-requested-path result-context)
                 (get-asset-extension result-context)
                 (get-asset-body result-context)))))))
+
+(defn- remove-asset-digest [path extension]
+  (let [[match digest] (first (re-seq #"(?sm)-([0-9a-f]{7,40})\.[^.]+$" path))]
+    (if match
+      (let [without-match (clj-str/replace path match "")]
+        (if (empty? extension)
+          [digest without-match]
+          [digest (str without-match "." extension)]))
+      [nil path])))
+
+(defn- throw-extension-does-not-match [path extension]
+  (throw
+    (Exception.
+      (format
+        "The extension of the asset \"%s\" does not match the requested output extension, \"%s\""
+        path extension))))
+
+(defn- extension-matches? [path extension]
+  (let [file-extension (get-extension path)]
+    (if (empty? file-extension)
+      true
+      (= file-extension extension))))
+
+(defn find-asset [config path extension]
+  (binding [*current-config* config]
+    (if (extension-matches? path extension)
+      (let [[digest path] (remove-asset-digest path extension)
+            assets (serve-asset (make-serve-context
+                                  (set-config config)
+                                  (set-requested-path path)
+                                  (set-requested-extension extension)))]
+        (if digest
+          (when (= digest (:digest (last assets)))
+            assets)
+          assets))
+      (throw-extension-does-not-match path extension))))
 

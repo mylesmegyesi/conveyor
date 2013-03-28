@@ -2,6 +2,8 @@
   (:require [clojure.java.io :refer [resource file]]
             [clojure.string :refer [split]]))
 
+(declare ^:dynamic *current-config*)
+
 (defn- base-dir [full-path sub-path]
   (first (split full-path (re-pattern sub-path) 2)))
 

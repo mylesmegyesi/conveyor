@@ -56,6 +56,18 @@
 (defn add-prefix [config prefix]
   (assoc config :prefix prefix))
 
+(defn set-use-digest-path [config value]
+  (assoc config :use-digest-path value))
+
+(defn- normalize-asset-host [host]
+  (when host
+    (if (.endsWith host "/")
+      (.substring host 0 (dec (count host)))
+      host)))
+
+(defn set-asset-host [config host]
+  (assoc config :asset-host (normalize-asset-host host)))
+
 (def default-pipeline-config
   {:load-paths []
    :compilers []
@@ -101,8 +113,16 @@
     config
     load-paths))
 
+(defn- configure-asset-host [config {:keys [asset-host]}]
+  (set-asset-host config asset-host))
+
+(defn- configure-use-digest-path [config {:keys [use-digest-path]}]
+  (set-use-digest-path config use-digest-path))
+
 (defn configure-asset-pipeline [config]
   (thread-pipeline-config
     (configure-load-paths config)
     (configure-prefix config)
-    (configure-plugins config)))
+    (configure-plugins config)
+    (configure-asset-host config)
+    (configure-use-digest-path config)))

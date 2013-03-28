@@ -1,7 +1,7 @@
 (ns conveyor.core
   (:require [clojure.string :refer [join replace-first] :as clj-str]
             [pantomime.mime :refer [mime-type-of]]
-            [conveyor.filename-utils :refer [get-extension]]
+            [conveyor.filename-utils :refer [get-extension file-join]]
             [conveyor.dynamic-asset-finder :refer [find-asset] :rename {find-asset dynamic-find-asset}]))
 
 (defn- remove-asset-digest [path extension]
@@ -26,6 +26,23 @@
       true
       (= file-extension extension))))
 
+(defn- remove-prefix [uri prefix]
+  (let [without-prefix (replace-first uri prefix "")]
+    (if (.startsWith without-prefix "/")
+      (replace-first without-prefix "/" "")
+      without-prefix)))
+
+(defn- path [config asset]
+  (if (:use-digest-path config)
+    (file-join "/" (:prefix config) (:digest-path asset))
+    (file-join "/" (:prefix config) (:logical-path asset))))
+
+(defn- paths [config assets]
+  (map #(path config %) assets))
+
+(defn- urls [{:keys [asset-host] :as config} assets]
+  (map #(str asset-host (path config %)) assets))
+
 (defn find-asset
   ([config path]
      (find-asset config path (get-extension path)))
@@ -39,11 +56,17 @@
           assets))
       (throw-extension-does-not-match path extension))))
 
-(defn- remove-prefix [uri prefix]
-  (let [without-prefix (replace-first uri prefix "")]
-    (if (.startsWith without-prefix "/")
-      (replace-first without-prefix "/" "")
-      without-prefix)))
+(defn asset-path
+  ([config path]
+    (paths config (find-asset config path)))
+  ([config path extension]
+    (paths config (find-asset config path extension))))
+
+(defn asset-url
+  ([config path]
+    (urls config (find-asset config path)))
+  ([config path extension]
+    (urls config (find-asset config path extension))))
 
 (defn wrap-asset-pipeline [handler {:keys [prefix] :as config}]
   (fn [{:keys [uri] :as request}]

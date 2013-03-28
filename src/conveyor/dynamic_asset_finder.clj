@@ -78,7 +78,7 @@
   (if (empty? (get-extension file-path))
     (if (empty? requested-extension)
       paths
-      (conj paths (add-extension "." requested-extension)))
+      (conj paths (add-extension file-path requested-extension)))
     (conj paths file-path)))
 
 (defn- extensions-from-compilers [compilers]

@@ -93,6 +93,14 @@
         (should= "configured" (:test-config config))
         (should== [style-path js-path] (:load-paths config))))
 
+    (it "configures the asset host"
+      (let [config (configure-asset-pipeline {:asset-host "test-host"})]
+      (should= "test-host" (:asset-host config))))
+
+    (it "configures the use-digest-path"
+      (let [config (configure-asset-pipeline {:use-digest-path true})]
+      (should (:use-digest-path config))))
+
     )
 
   )

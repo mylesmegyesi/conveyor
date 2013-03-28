@@ -1,6 +1,5 @@
 (ns conveyor.compile
   (:require [clojure.string :refer [join]]
-            [conveyor.asset :refer [build-asset]]
             [conveyor.context :refer :all]))
 
 (defn- throw-multiple-output-exensions-with-no-requested-output-extension [{:keys [requested-path found-path]}

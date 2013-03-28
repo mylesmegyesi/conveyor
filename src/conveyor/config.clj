@@ -64,3 +64,45 @@
 (defmacro thread-pipeline-config [& body]
   `(-> default-pipeline-config
      ~@body))
+
+(defn- configure-plugins [config {:keys [plugins]}]
+  (reduce
+    (fn [config plugin-name]
+      (let [ns-sym (symbol (format "conveyor.%s" (name plugin-name)))]
+        (require ns-sym)
+        (let [configure-sym (symbol (format "configure-%s" (name plugin-name)))
+              configure-fn (ns-resolve (the-ns ns-sym) configure-sym)]
+          (configure-fn config))))
+    config
+    plugins))
+
+(defn- configure-prefix [config {:keys [prefix]}]
+  (if prefix
+    (add-prefix config prefix)
+    config))
+
+(defn- throw-unknown-load-path-type [type]
+  (throw
+    (Exception.
+      (format
+        "Unknown type of load-path: :unknown-type. Valid types are :resource-directory and :directory."
+        type))))
+
+(defn- configure-load-paths [config {:keys [load-paths]}]
+  (reduce
+    (fn [config {:keys [type path file-in-dir]}]
+      (cond
+        (= :resource-directory type)
+        (add-resource-directory-to-load-path config path file-in-dir)
+        (= :directory type)
+        (add-directory-to-load-path config path)
+        :else
+        (throw-unknown-load-path-type type)))
+    config
+    load-paths))
+
+(defn configure-asset-pipeline [config]
+  (thread-pipeline-config
+    (configure-load-paths config)
+    (configure-prefix config)
+    (configure-plugins config)))

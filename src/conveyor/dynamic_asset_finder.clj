@@ -130,9 +130,12 @@
             (set-found-path full-path)
             (set-found-extension (get-extension full-path))))))))
 
-(defn find-asset [context]
+(defn find-asset [config path extension]
   (read-asset
-    context
+    (make-serve-context
+      (set-config config)
+      (set-requested-path path)
+      (set-requested-extension extension))
     (fn [context]
       (-> context
         compile-asset

@@ -9,7 +9,7 @@
 
 (describe "conveyor.core"
 
-  (context "find-asset"
+  (context "dynamic-find-asset"
 
     (with config (thread-pipeline-config
                    (add-directory-to-load-path "test_fixtures/public/javascripts")))

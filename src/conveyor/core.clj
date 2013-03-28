@@ -2,7 +2,6 @@
   (:require [clojure.string :refer [join replace-first] :as clj-str]
             [pantomime.mime :refer [mime-type-of]]
             [conveyor.filename-utils :refer [get-extension]]
-            [conveyor.context :refer :all]
             [conveyor.dynamic-asset-finder :refer [find-asset] :rename {find-asset dynamic-find-asset}]))
 
 (defn- remove-asset-digest [path extension]
@@ -29,14 +28,11 @@
 
 (defn find-asset
   ([config path]
-    (find-asset config path (get-extension path)))
+     (find-asset config path (get-extension path)))
   ([config path extension]
     (if (extension-matches? path extension)
       (let [[digest path] (remove-asset-digest path extension)
-            assets (dynamic-find-asset (make-serve-context
-                                         (set-config config)
-                                         (set-requested-path path)
-                                         (set-requested-extension extension)))]
+            assets (dynamic-find-asset config path extension)]
         (if digest
           (when (= digest (:digest (last assets)))
             assets)

@@ -29,11 +29,16 @@
   `(-> default-compiler-config
      ~@body))
 
+(defn- normalize-resource-url [url]
+  (if (= "file" (.getProtocol url))
+    (.getPath url)
+    (str url)))
+
 (defn resource-directory-path [directory-path resource-in-directory]
   (let [with-leading-slash (str "/" resource-in-directory)
         relative-path (str directory-path with-leading-slash)]
     (when-let [resource-url (resource relative-path)]
-      (base-dir (str resource-url) with-leading-slash))))
+      (base-dir (normalize-resource-url resource-url) with-leading-slash))))
 
 (defn directory-path [path]
   (let [directory (file path)]

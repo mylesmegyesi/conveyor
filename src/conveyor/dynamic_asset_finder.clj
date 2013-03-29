@@ -5,7 +5,8 @@
             [conveyor.compile :refer [compile-asset]]
             [conveyor.context :refer :all]
             [conveyor.filename-utils :refer :all])
-  (:import [java.net MalformedURLException]))
+  (:import [java.net MalformedURLException]
+           [java.io FileNotFoundException]))
 
 (defn- build-asset [requested-path extension asset-body]
   (let [digest (md5 asset-body)
@@ -34,6 +35,8 @@
   (try
     (read-stream (.openStream (as-url file-path)))
     (catch MalformedURLException e
+      nil)
+    (catch FileNotFoundException e
       nil)))
 
 (defn- read-file [file-path]

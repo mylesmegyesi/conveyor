@@ -164,16 +164,18 @@
       true
       (= file-extension extension))))
 
-(defn find-asset [config path extension]
-  (if (extension-matches? path extension)
-    (let [[digest path] (remove-asset-digest path extension)
-          assets (serve-asset (make-serve-context
-                                (set-config config)
-                                (set-requested-path path)
-                                (set-requested-extension extension)))]
-      (if digest
-        (when (= digest (:digest (last assets)))
-          assets)
-        assets))
-    (throw-extension-does-not-match path extension)))
+(defn find-asset
+  ([config path] (find-asset config path (get-extension path)))
+  ([config path extension]
+    (if (extension-matches? path extension)
+      (let [[digest path] (remove-asset-digest path extension)
+            assets (serve-asset (make-serve-context
+                                  (set-config config)
+                                  (set-requested-path path)
+                                  (set-requested-extension extension)))]
+        (if digest
+          (when (= digest (:digest (last assets)))
+            assets)
+          assets))
+      (throw-extension-does-not-match path extension))))
 

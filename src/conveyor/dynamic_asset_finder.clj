@@ -4,8 +4,7 @@
             [digest :refer [md5]]
             [conveyor.compile :refer [compile-asset]]
             [conveyor.context :refer :all]
-            [conveyor.filename-utils :refer :all]
-            [conveyor.config :refer [*current-config*]])
+            [conveyor.filename-utils :refer :all])
   (:import [java.net MalformedURLException]))
 
 (defn- build-asset [requested-path extension asset-body]
@@ -166,16 +165,15 @@
       (= file-extension extension))))
 
 (defn find-asset [config path extension]
-  (binding [*current-config* config]
-    (if (extension-matches? path extension)
-      (let [[digest path] (remove-asset-digest path extension)
-            assets (serve-asset (make-serve-context
-                                  (set-config config)
-                                  (set-requested-path path)
-                                  (set-requested-extension extension)))]
-        (if digest
-          (when (= digest (:digest (last assets)))
-            assets)
-          assets))
-      (throw-extension-does-not-match path extension))))
+  (if (extension-matches? path extension)
+    (let [[digest path] (remove-asset-digest path extension)
+          assets (serve-asset (make-serve-context
+                                (set-config config)
+                                (set-requested-path path)
+                                (set-requested-extension extension)))]
+      (if digest
+        (when (= digest (:digest (last assets)))
+          assets)
+        assets))
+    (throw-extension-does-not-match path extension)))
 

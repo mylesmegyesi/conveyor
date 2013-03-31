@@ -1,12 +1,9 @@
 (ns conveyor.dynamic-asset-finder
   (:require [clojure.string :refer [join] :as clj-str]
-            [clojure.java.io :refer [as-file input-stream as-url]]
             [digest :refer [md5]]
             [conveyor.compile :refer [compile-asset]]
             [conveyor.context :refer :all]
-            [conveyor.filename-utils :refer :all])
-  (:import [java.net MalformedURLException]
-           [java.io FileNotFoundException]))
+            [conveyor.file-utils :refer :all]))
 
 (defn- build-asset [requested-path extension asset-body]
   (let [digest (md5 asset-body)
@@ -15,34 +12,6 @@
       :logical-path (add-extension file-name extension)
       :digest digest
       :digest-path (add-extension (str file-name "-" digest) extension)}]))
-
-(defn- read-stream [stream]
-  (let [sb (StringBuilder.)]
-    (with-open [stream stream]
-      (loop [c (.read stream)]
-        (if (neg? c)
-          (str sb)
-          (do
-            (.append sb (char c))
-            (recur (.read stream))))))))
-
-(defn- read-normal-file [file-path]
-  (let [file (as-file file-path)]
-    (when (and (.exists file) (.isFile file))
-      (read-stream (input-stream file)))))
-
-(defn- read-resource-file [file-path]
-  (try
-    (read-stream (.openStream (as-url file-path)))
-    (catch MalformedURLException e
-      nil)
-    (catch FileNotFoundException e
-      nil)))
-
-(defn- read-file [file-path]
-  (if-let [file (read-normal-file file-path)]
-    file
-    (read-resource-file file-path)))
 
 (defn- read-files [file-paths]
   (reduce

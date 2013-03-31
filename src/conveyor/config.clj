@@ -1,6 +1,7 @@
 (ns conveyor.config
   (:require [clojure.java.io :refer [resource file]]
-            [clojure.string :refer [split]]))
+            [clojure.string :refer [split]]
+            [conveyor.file-utils :refer [ensure-dir]]))
 
 (defn- base-dir [full-path sub-path]
   (first (split full-path (re-pattern sub-path) 2)))
@@ -64,6 +65,11 @@
 (defn set-use-digest-path [config value]
   (assoc config :use-digest-path value))
 
+(defn set-output-dir [config path]
+  (let [dir (file path)]
+    (ensure-dir dir)
+    (assoc config :output-dir (.getAbsolutePath dir))))
+
 (defn- normalize-asset-host [host]
   (when host
     (if (.endsWith host "/")
@@ -76,7 +82,8 @@
 (def default-pipeline-config
   {:load-paths []
    :compilers []
-   :prefix "/"})
+   :prefix "/"
+   :output-dir "public"})
 
 (defmacro thread-pipeline-config [& body]
   `(-> default-pipeline-config
@@ -124,10 +131,15 @@
 (defn- configure-use-digest-path [config {:keys [use-digest-path]}]
   (set-use-digest-path config use-digest-path))
 
+(defn- configure-output-dir [config {:keys [output-dir]}]
+  (set-output-dir config (or output-dir (:output-dir config))))
+
 (defn configure-asset-pipeline [config]
   (thread-pipeline-config
     (configure-load-paths config)
     (configure-prefix config)
     (configure-plugins config)
     (configure-asset-host config)
-    (configure-use-digest-path config)))
+    (configure-use-digest-path config)
+    (configure-output-dir config)))
+

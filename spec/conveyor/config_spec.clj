@@ -101,6 +101,14 @@
       (let [config (configure-asset-pipeline {:use-digest-path true})]
       (should (:use-digest-path config))))
 
+    (it "configures the output-dir"
+      (let [config (configure-asset-pipeline {:output-dir "test_output"})]
+      (should= (directory-path "test_output") (:output-dir config))))
+
+    (it "uses public as the default the output-dir"
+      (let [config (configure-asset-pipeline {:output-dir nil})]
+      (should= (directory-path "public") (:output-dir config))))
+
     )
 
   )

@@ -1,8 +1,10 @@
 (ns conveyor.core
-  (:require [clojure.string :refer [replace-first]]
+  (:require [clojure.java.io :refer [file]]
+            [clojure.string :refer [replace-first]]
             [pantomime.mime :refer [mime-type-of]]
-            [conveyor.filename-utils :refer [get-extension file-join]]
-            [conveyor.dynamic-asset-finder :refer [find-asset] :rename {find-asset dynamic-find-asset}]))
+            [conveyor.file-utils :refer [get-extension file-join ensure-dir gzip]]
+            [conveyor.dynamic-asset-finder :refer [find-asset] :rename {find-asset dynamic-find-asset}])
+  (:import [java.io FileOutputStream ByteArrayInputStream]))
 
 (defn- remove-prefix [uri prefix]
   (let [without-prefix (replace-first uri prefix "")]
@@ -10,10 +12,13 @@
       (replace-first without-prefix "/" "")
       without-prefix)))
 
+(defn- build-path [config path]
+  (file-join "/" (:prefix config) path))
+
 (defn- path [config asset]
   (if (:use-digest-path config)
-    (file-join "/" (:prefix config) (:digest-path asset))
-    (file-join "/" (:prefix config) (:logical-path asset))))
+    (build-path config (:digest-path asset))
+    (build-path config (:logical-path asset))))
 
 (defn- paths [config assets]
   (map #(path config %) assets))
@@ -38,6 +43,39 @@
     (urls config (find-asset config path)))
   ([config path extension]
     (urls config (find-asset config path extension))))
+
+(defn- write-gzipped-file [file-name body]
+  (let [output-file-name (str file-name ".gz")
+        in (ByteArrayInputStream. (.getBytes body))
+        out (FileOutputStream. (file output-file-name))]
+    (gzip in out)))
+
+(defn- write-assets [config assets]
+  (doseq [asset assets]
+    (let [file-name (file-join (:output-dir config) (path config asset))
+          directory (.getParentFile (file file-name))]
+      (ensure-dir directory)
+      (spit file-name (:body asset))
+      (write-gzipped-file file-name (:body asset)))))
+
+(defn- build-manifest [config assets]
+  (reduce
+    (fn [manifest asset]
+      (assoc manifest
+             (:logical-path asset)
+             (path config asset)))
+    {}
+    assets))
+
+(defn- write-manifest [config assets]
+  (let [manifest (build-manifest config assets)
+        manifest-file (file-join (:output-dir config) (:prefix config) "manifest.edn")]
+    (spit manifest-file manifest)))
+
+(defn precompile [config paths]
+  (let [assets (mapcat #(find-asset config %) paths)]
+    (write-assets config assets)
+    (write-manifest config assets)))
 
 (defn wrap-asset-pipeline [handler {:keys [prefix] :as config}]
   (fn [{:keys [uri] :as request}]

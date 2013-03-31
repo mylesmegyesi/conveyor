@@ -1,5 +1,5 @@
 (ns conveyor.context
-  (:require [conveyor.filename-utils :refer [get-extension]]))
+  (:require [conveyor.file-utils :refer [get-extension]]))
 
 (defmacro make-serve-context [& forms]
   `(-> {}

@@ -1,7 +1,6 @@
 (ns conveyor.config
   (:require [clojure.java.io :refer [resource file]]
-            [clojure.string :refer [split]]
-            [conveyor.file-utils :refer [ensure-dir]]))
+            [clojure.string :refer [split]]))
 
 (defn- base-dir [full-path sub-path]
   (first (split full-path (re-pattern sub-path) 2)))
@@ -66,9 +65,7 @@
   (assoc config :use-digest-path value))
 
 (defn set-output-dir [config path]
-  (let [dir (file path)]
-    (ensure-dir dir)
-    (assoc config :output-dir (.getAbsolutePath dir))))
+  (assoc config :output-dir path))
 
 (defn- normalize-asset-host [host]
   (when host
@@ -78,6 +75,9 @@
 
 (defn set-asset-host [config host]
   (assoc config :asset-host (normalize-asset-host host)))
+
+(defn set-manifest [config manfiest-path]
+  (assoc config :manifest manfiest-path))
 
 (def default-pipeline-config
   {:load-paths []
@@ -134,6 +134,9 @@
 (defn- configure-output-dir [config {:keys [output-dir]}]
   (set-output-dir config (or output-dir (:output-dir config))))
 
+(defn- configure-manifest [config {:keys [manifest]}]
+  (set-manifest config manifest))
+
 (defn configure-asset-pipeline [config]
   (thread-pipeline-config
     (configure-load-paths config)
@@ -141,5 +144,6 @@
     (configure-plugins config)
     (configure-asset-host config)
     (configure-use-digest-path config)
-    (configure-output-dir config)))
+    (configure-output-dir config)
+    (configure-manifest config)))
 

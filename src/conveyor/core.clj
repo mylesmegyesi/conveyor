@@ -2,7 +2,7 @@
   (:require [clojure.java.io :refer [file]]
             [clojure.string :refer [replace-first]]
             [pantomime.mime :refer [mime-type-of]]
-            [conveyor.file-utils :refer [get-extension file-join ensure-dir gzip]]
+            [conveyor.file-utils :refer [get-extension file-join ensure-directory-of-file gzip]]
             [conveyor.dynamic-asset-finder :refer [find-asset] :rename {find-asset dynamic-find-asset}])
   (:import [java.io FileOutputStream ByteArrayInputStream]))
 
@@ -52,9 +52,8 @@
 
 (defn- write-assets [config assets]
   (doseq [asset assets]
-    (let [file-name (file-join (:output-dir config) (path config asset))
-          directory (.getParentFile (file file-name))]
-      (ensure-dir directory)
+    (let [file-name (file-join (:output-dir config) (path config asset))]
+      (ensure-directory-of-file file-name)
       (spit file-name (:body asset))
       (write-gzipped-file file-name (:body asset)))))
 
@@ -67,10 +66,15 @@
     {}
     assets))
 
+(defn- manifest-path [{:keys [manifest output-dir prefix]}]
+  (if manifest
+    manifest
+    (file-join output-dir prefix "manifest.edn")))
+
 (defn- write-manifest [config assets]
-  (let [manifest (build-manifest config assets)
-        manifest-file (file-join (:output-dir config) (:prefix config) "manifest.edn")]
-    (spit manifest-file manifest)))
+  (let [manifest (manifest-path config)]
+    (ensure-directory-of-file manifest)
+    (spit manifest (build-manifest config assets))))
 
 (defn precompile [config paths]
   (let [assets (mapcat #(find-asset config %) paths)]

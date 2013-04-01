@@ -10,3 +10,4 @@ pom.xml
 .lein-plugins
 test_output
 public
+test_manifest_dir

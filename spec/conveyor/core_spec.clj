@@ -140,7 +140,9 @@
                    (add-directory-to-load-path "test_fixtures/public/javascripts")
                    (add-directory-to-load-path "test_fixtures/public/stylesheets")))
 
-    (after (FileUtils/deleteDirectory (file (:output-dir @config))))
+    (after
+      (FileUtils/deleteDirectory (file (:output-dir @config)))
+      (FileUtils/deleteDirectory (file "test_manifest_dir")))
 
     (it "writes the asset to the output directory"
       (precompile @config ["test1.js"])
@@ -183,6 +185,22 @@
         (should=
           {"test2.css" "/test2-9d7e7252425acc78ff419cf3d37a7820.css"
            "test1.js" "/test1-200368af90cc4c6f4f1ddf36f97a279e.js"}
+          manifest)))
+
+    (it "writes the manifest that is specified in the config"
+      (precompile (set-manifest @config "test_output/test-manifest.edn") ["test1.js" "test2.css"])
+      (let [manifest (read-edn (slurp "test_output/test-manifest.edn"))]
+        (should=
+          {"test2.css" "/test2.css"
+           "test1.js" "/test1.js"}
+          manifest)))
+
+    (it "creates the manifest file in a directory that does not exist"
+      (precompile (set-manifest @config "test_manifest_dir/test-manifest.edn") ["test1.js" "test2.css"])
+      (let [manifest (read-edn (slurp "test_manifest_dir/test-manifest.edn"))]
+        (should=
+          {"test2.css" "/test2.css"
+           "test1.js" "/test1.js"}
           manifest)))
 
     (it "gzips the output"

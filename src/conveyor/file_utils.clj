@@ -1,5 +1,5 @@
 (ns conveyor.file-utils
-  (:require [clojure.java.io :refer [as-file input-stream as-url copy output-stream]])
+  (:require [clojure.java.io :refer [file as-file input-stream as-url copy output-stream]])
   (:import [org.apache.commons.io FilenameUtils FileUtils]
            [java.net MalformedURLException]
            [java.io FileNotFoundException]
@@ -25,9 +25,12 @@
       (FilenameUtils/concat base-path (remove-leading-slash to-add)))
     paths))
 
-(defn ensure-dir [dir]
+(defn ensure-directory [dir]
   (when-not (.exists dir)
     (FileUtils/forceMkdir dir)))
+
+(defn ensure-directory-of-file [file-name]
+  (ensure-directory (.getParentFile (file file-name))))
 
 (defn- read-stream [stream]
   (let [sb (StringBuilder.)]
@@ -58,8 +61,8 @@
     (read-resource-file file-path)))
 
 (defn gunzip [input output & opts]
- (with-open [input (-> input input-stream GZIPInputStream.)]
-   (apply copy input output opts)))
+  (with-open [input (-> input input-stream GZIPInputStream.)]
+    (apply copy input output opts)))
 
 (defn gzip [input output & opts]
   (with-open [output (-> output output-stream GZIPOutputStream.)]

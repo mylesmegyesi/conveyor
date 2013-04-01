@@ -78,7 +78,7 @@
 
     (it "configures the prefix"
       (let [config (configure-asset-pipeline {:prefix "/assets"})]
-      (should= "/assets" (:prefix config))))
+        (should= "/assets" (:prefix config))))
 
     (it "configures a plugin"
       (let [full-path (directory-path "test_fixtures/public/stylesheets")
@@ -95,19 +95,23 @@
 
     (it "configures the asset host"
       (let [config (configure-asset-pipeline {:asset-host "test-host"})]
-      (should= "test-host" (:asset-host config))))
+        (should= "test-host" (:asset-host config))))
 
     (it "configures the use-digest-path"
       (let [config (configure-asset-pipeline {:use-digest-path true})]
-      (should (:use-digest-path config))))
+        (should (:use-digest-path config))))
 
     (it "configures the output-dir"
       (let [config (configure-asset-pipeline {:output-dir "test_output"})]
-      (should= (directory-path "test_output") (:output-dir config))))
+        (should= "test_output" (:output-dir config))))
 
     (it "uses public as the default the output-dir"
       (let [config (configure-asset-pipeline {:output-dir nil})]
-      (should= (directory-path "public") (:output-dir config))))
+        (should= "public" (:output-dir config))))
+
+    (it "configures the manifest"
+      (let [config (configure-asset-pipeline {:manifest "some-other-manfiest.edn"})]
+        (should= "some-other-manfiest.edn" (:manifest config))))
 
     )
 

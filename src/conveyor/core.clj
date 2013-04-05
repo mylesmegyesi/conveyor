@@ -1,10 +1,11 @@
 (ns conveyor.core
-  (:require [clojure.java.io :refer [file]]
+  (:require [clojure.java.io :refer [file writer copy]]
             [clojure.string :refer [replace-first]]
             [pantomime.mime :refer [mime-type-of]]
-            [conveyor.file-utils :refer [get-extension file-join ensure-directory-of-file gzip]]
-            [conveyor.dynamic-asset-finder :refer [find-asset] :rename {find-asset dynamic-find-asset}])
-  (:import [java.io FileOutputStream ByteArrayInputStream]))
+            [conveyor.file-utils :refer :all]
+            [conveyor.manfiest :refer [manifest-path]]
+            [conveyor.dynamic-asset-finder :refer [find-asset] :rename {find-asset dynamic-find-asset}]
+            [conveyor.static-asset-finder :refer [find-asset] :rename {find-asset static-find-asset}]))
 
 (defn- remove-prefix [uri prefix]
   (let [without-prefix (replace-first uri prefix "")]
@@ -15,10 +16,13 @@
 (defn- build-path [config path]
   (file-join "/" (:prefix config) path))
 
-(defn- path [config asset]
+(defn- base-path [config asset]
   (if (:use-digest-path config)
-    (build-path config (:digest-path asset))
-    (build-path config (:logical-path asset))))
+    (:digest-path asset)
+    (:logical-path asset)))
+
+(defn- path [config asset]
+  (build-path config (base-path config asset)))
 
 (defn- paths [config assets]
   (map #(path config %) assets))
@@ -26,11 +30,16 @@
 (defn- urls [{:keys [asset-host] :as config} assets]
   (map #(str asset-host (path config %)) assets))
 
+(defn- build-asset-finder [{:keys [search-strategy] :as config}]
+  (case search-strategy
+    :dynamic dynamic-find-asset
+    :static static-find-asset))
+
 (defn find-asset
   ([config path]
      (find-asset config path (get-extension path)))
   ([config path extension]
-    (dynamic-find-asset config path extension)))
+    ((build-asset-finder config) config path extension)))
 
 (defn asset-path
   ([config path]
@@ -44,17 +53,11 @@
   ([config path extension]
     (urls config (find-asset config path extension))))
 
-(defn- write-gzipped-file [file-name body]
-  (let [output-file-name (str file-name ".gz")
-        in (ByteArrayInputStream. (.getBytes body))
-        out (FileOutputStream. (file output-file-name))]
-    (gzip in out)))
-
 (defn- write-assets [config assets]
   (doseq [asset assets]
     (let [file-name (file-join (:output-dir config) (path config asset))]
       (ensure-directory-of-file file-name)
-      (spit file-name (:body asset))
+      (write-file file-name (:body asset))
       (write-gzipped-file file-name (:body asset)))))
 
 (defn- build-manifest [config assets]
@@ -62,14 +65,9 @@
     (fn [manifest asset]
       (assoc manifest
              (:logical-path asset)
-             (path config asset)))
+             (base-path config asset)))
     {}
     assets))
-
-(defn- manifest-path [{:keys [manifest output-dir prefix]}]
-  (if manifest
-    manifest
-    (file-join output-dir prefix "manifest.edn")))
 
 (defn- write-manifest [config assets]
   (let [manifest (manifest-path config)]

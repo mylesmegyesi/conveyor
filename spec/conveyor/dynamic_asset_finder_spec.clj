@@ -1,7 +1,7 @@
 (ns conveyor.dynamic-asset-finder-spec
   (:require [speclj.core :refer :all]
             [conveyor.config :refer :all]
-            [conveyor.dynamic-asset-finder :refer :all]))
+            [conveyor.dynamic-asset-finder :refer [find-asset]]))
 
 (defn test-compiler [config body filename input-extension output-extension]
   (str body "compiled with " filename ":" input-extension ":" output-extension))

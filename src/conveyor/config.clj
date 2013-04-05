@@ -67,6 +67,9 @@
 (defn set-output-dir [config path]
   (assoc config :output-dir path))
 
+(defn set-search-strategy [config strat]
+  (assoc config :search-strategy strat))
+
 (defn- normalize-asset-host [host]
   (when host
     (if (.endsWith host "/")
@@ -83,7 +86,8 @@
   {:load-paths []
    :compilers []
    :prefix "/"
-   :output-dir "public"})
+   :output-dir "public"
+   :search-strategy :dynamic})
 
 (defmacro thread-pipeline-config [& body]
   `(-> default-pipeline-config
@@ -137,6 +141,9 @@
 (defn- configure-manifest [config {:keys [manifest]}]
   (set-manifest config manifest))
 
+(defn- configure-search-strategy [config {:keys [search-strategy]}]
+  (set-search-strategy config (or search-strategy (:search-strategy config))))
+
 (defn configure-asset-pipeline [config]
   (thread-pipeline-config
     (configure-load-paths config)
@@ -145,5 +152,6 @@
     (configure-asset-host config)
     (configure-use-digest-path config)
     (configure-output-dir config)
-    (configure-manifest config)))
+    (configure-manifest config)
+    (configure-search-strategy config)))
 

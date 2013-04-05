@@ -11,3 +11,4 @@ pom.xml
 test_output
 public
 test_manifest_dir
+output_fixtures

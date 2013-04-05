@@ -113,6 +113,14 @@
       (let [config (configure-asset-pipeline {:manifest "some-other-manfiest.edn"})]
         (should= "some-other-manfiest.edn" (:manifest config))))
 
+    (it "configures the search strategy"
+      (let [config (configure-asset-pipeline {:search-strategy :static})]
+        (should= :static (:search-strategy config))))
+
+    (it "defaults the search strategy to dynamic"
+      (let [config (configure-asset-pipeline {})]
+        (should= :dynamic (:search-strategy config))))
+
     )
 
   )

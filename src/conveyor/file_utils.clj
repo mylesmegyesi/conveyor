@@ -2,8 +2,8 @@
   (:require [clojure.java.io :refer [file as-file input-stream as-url copy output-stream]])
   (:import [org.apache.commons.io FilenameUtils FileUtils]
            [java.net MalformedURLException]
-           [java.io FileNotFoundException]
-           [java.util.zip GZIPInputStream GZIPOutputStream]))
+           [java.io FileNotFoundException FileOutputStream]
+           [java.util.zip GZIPOutputStream]))
 
 (defn remove-extension [file-path]
   (FilenameUtils/removeExtension file-path))
@@ -32,7 +32,7 @@
 (defn ensure-directory-of-file [file-name]
   (ensure-directory (.getParentFile (file file-name))))
 
-(defn- read-stream [stream]
+(defn read-stream [stream]
   (let [sb (StringBuilder.)]
     (with-open [stream stream]
       (loop [c (.read stream)]
@@ -60,11 +60,15 @@
     file
     (read-resource-file file-path)))
 
-(defn gunzip [input output & opts]
-  (with-open [input (-> input input-stream GZIPInputStream.)]
-    (apply copy input output opts)))
+(defn- string->stream [body out]
+  (with-open [out out]
+    (doseq [c (.toCharArray body)]
+      (.write out (int c)))))
 
-(defn gzip [input output & opts]
-  (with-open [output (-> output output-stream GZIPOutputStream.)]
-    (apply copy input output opts)))
+(defn write-gzipped-file [f body]
+  (let [file-name (add-extension f "gz")]
+    (string->stream body (GZIPOutputStream. (FileOutputStream. (file file-name))))))
+
+(defn write-file [f body]
+  (string->stream body (FileOutputStream. (file f))))
 

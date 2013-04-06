@@ -15,7 +15,7 @@
   (context "asset-path"
 
     (with config (thread-pipeline-config
-                   (add-directory-to-load-path "spec/fixtures/public/javascripts")))
+                   (add-directory-to-load-path "test_fixtures/public/javascripts")))
 
     (it "returns the logical path"
       (should= ["/test1.js"] (asset-path @config "test1.js")))
@@ -41,7 +41,7 @@
 
     (with config (thread-pipeline-config
                    (set-asset-host "http://cloudfront.net")
-                   (add-directory-to-load-path "spec/fixtures/public/javascripts")))
+                   (add-directory-to-load-path "test_fixtures/public/javascripts")))
 
     (it "returns the logical path"
       (should= ["http://cloudfront.net/test1.js"] (asset-url @config "test1.js")))
@@ -70,9 +70,9 @@
   (context "wrap-asset-pipeline middleware"
 
     (with config (thread-pipeline-config
-                   (add-directory-to-load-path "spec/fixtures/public/javascripts")
-                   (add-directory-to-load-path "spec/fixtures/public/images")
-                   (add-directory-to-load-path "spec/fixtures/public/stylesheets")))
+                   (add-directory-to-load-path "test_fixtures/public/javascripts")
+                   (add-directory-to-load-path "test_fixtures/public/images")
+                   (add-directory-to-load-path "test_fixtures/public/stylesheets")))
 
     (it "responds with the body of a javascript file when found"
       (let [handler (wrap-asset-pipeline (fn [_] :not-found) @config)
@@ -138,9 +138,9 @@
 
     (with config (thread-pipeline-config
                    (set-output-dir "test_output")
-                   (add-directory-to-load-path "spec/fixtures/public/images")
-                   (add-directory-to-load-path "spec/fixtures/public/javascripts")
-                   (add-directory-to-load-path "spec/fixtures/public/stylesheets")))
+                   (add-directory-to-load-path "test_fixtures/public/images")
+                   (add-directory-to-load-path "test_fixtures/public/javascripts")
+                   (add-directory-to-load-path "test_fixtures/public/stylesheets")))
 
     (after
       (FileUtils/deleteDirectory (file (:output-dir @config)))

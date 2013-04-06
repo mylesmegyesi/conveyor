@@ -7,8 +7,8 @@
 
   (with config (thread-pipeline-config
                  (set-search-strategy :static)
-                 (set-output-dir "spec/fixtures/output")
-                 (set-manifest "spec/fixtures/output/manifest1.edn")))
+                 (set-output-dir "test_fixtures/output")
+                 (set-manifest "test_fixtures/output/manifest1.edn")))
 
   (it "finds an asset in the output directory"
     (let [found-assets (find-asset @config "test1.js")
@@ -18,7 +18,7 @@
 
   (it "finds an asset in the output directory with a prefix"
       (let [config (set-manifest (add-prefix @config "/assets")
-                                 "spec/fixtures/output/manifest2.edn")
+                                 "test_fixtures/output/manifest2.edn")
           found-assets (find-asset config "test1.js")
           asset (first found-assets)]
       (should= 1 (count found-assets))
@@ -27,7 +27,7 @@
   (it "throws an exception if the requested file is not in the manifest"
     (should-throw
       Exception
-      "unknown.js is not in the manifest \"spec/fixtures/output/manifest1.edn\". It has not been precompiled."
+      "unknown.js is not in the manifest \"test_fixtures/output/manifest1.edn\". It has not been precompiled."
       (find-asset @config "unknown.js")))
 
   )

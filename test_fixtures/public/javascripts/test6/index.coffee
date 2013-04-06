@@ -1,1 +1,0 @@
-var index = 1;

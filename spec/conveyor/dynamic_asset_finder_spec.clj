@@ -9,7 +9,7 @@
 (describe "conveyor.dynamic-asset-finder"
 
   (with config (thread-pipeline-config
-                 (add-directory-to-load-path "test_fixtures/public/javascripts")))
+                 (add-directory-to-load-path "spec/fixtures/public/javascripts")))
 
   (it "throws an exception if the extension of the file and requested output extension do not match"
     (should-throw
@@ -40,8 +40,8 @@
       (should= "test1-200368af90cc4c6f4f1ddf36f97a279e.js" (:digest-path asset))))
 
   (it "finds an asset with multiple load paths"
-    (let [found-assets (find-asset {:load-paths ["test_fixtures/public/javascripts"
-                                                 "test_fixtures/public/stylesheets"]} "test2.css")
+    (let [found-assets (find-asset {:load-paths ["spec/fixtures/public/javascripts"
+                                                 "spec/fixtures/public/stylesheets"]} "test2.css")
           asset (first found-assets)]
       (should= 1 (count found-assets))
       (should= ".test2 { color: black; }\n" (:body asset))
@@ -90,7 +90,7 @@
       (should= "test3.fake-output" (:logical-path asset))))
 
   (it "compiles the asset"
-    (let [base-path (directory-path "test_fixtures/public/javascripts")
+    (let [base-path (directory-path "spec/fixtures/public/javascripts")
           asset (first (find-asset (add-compiler-config @config (configure-compiler
                                                                   (set-compiler test-compiler)
                                                                   (add-input-extension "fake1")
@@ -99,7 +99,7 @@
       (should= "test3.fake-output" (:logical-path asset))))
 
   (it "throws an exception if an compiler has two extensions and a file for each extension is found"
-    (let [base-path (directory-path "test_fixtures/public/javascripts")]
+    (let [base-path (directory-path "spec/fixtures/public/javascripts")]
       (should-throw
         Exception (format "Search for \"test4.fake-output\" returned multiple results: \"%s\", \"%s\""
                           (str base-path "/test4.fake")
@@ -110,7 +110,7 @@
                                                    (add-output-extension "fake-output"))) "test4.fake-output"))))
 
   (it "throws an exception if a compiler has two input extensions and a file for both extensions + an output extension are found"
-    (let [base-path (directory-path "test_fixtures/public/javascripts")]
+    (let [base-path (directory-path "spec/fixtures/public/javascripts")]
       (should-throw
         Exception (format "Search for \"test5.fake-output\" returned multiple results: \"%s\", \"%s\", \"%s\""
                           (str base-path "/test5.fake-output")
@@ -141,7 +141,7 @@
       (should= "multiple_outputs.txt" (:logical-path txt-asset))))
 
   (it "file that does not have an extension and matches an compiler with more than one output extension - must request using an extension"
-    (let [base-path (directory-path "test_fixtures/public/javascripts")
+    (let [base-path (directory-path "spec/fixtures/public/javascripts")
           configured-compiler (add-compiler-config @config (configure-compiler
                                                          (add-input-extension "markdown")
                                                          (add-output-extension "html")
@@ -159,7 +159,7 @@
         (find-asset configured-compiler "multiple_outputs"))))
 
   (it "compiles the asset for a file that has no requested extension and one output extension"
-    (let [base-path (directory-path "test_fixtures/public/javascripts")
+    (let [base-path (directory-path "spec/fixtures/public/javascripts")
           asset (first (find-asset (add-compiler-config @config (configure-compiler
                                                                   (set-compiler test-compiler)
                                                                   (add-input-extension "fake1")
@@ -220,7 +220,7 @@
       (should= "test7.js" (:logical-path asset))))
 
   (it "throws an exception if a normal file and index file are both found"
-    (let [base-path (directory-path "test_fixtures/public/javascripts")]
+    (let [base-path (directory-path "spec/fixtures/public/javascripts")]
       (should-throw
         Exception (format "Search for \"test8\" returned multiple results: \"%s\", \"%s\""
                           (str base-path "/test8.js")

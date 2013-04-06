@@ -4,4 +4,4 @@
 (defn configure-test-plugin [config]
   (->
     (assoc config :test-config "configured")
-    (add-directory-to-load-path "test_fixtures/public/stylesheets")))
+    (add-directory-to-load-path "spec/fixtures/public/stylesheets")))

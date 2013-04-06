@@ -1,0 +1,5 @@
+@import "ellipsis/ellipsis";
+
+.test-compass1 {
+  @include ellipsis();
+}

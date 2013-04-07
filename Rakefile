@@ -62,7 +62,9 @@ def package(name, dependencies)
   desc "Gather dependencies for #{name}"
   task :deps do
     if ci?
-      _install(name)
+      dependencies.each do |dep|
+        _install(dep)
+      end
     else
       checkouts(name, dependencies)
     end

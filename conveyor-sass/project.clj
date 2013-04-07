@@ -13,6 +13,6 @@
                    :main speclj.main}}
   :plugins [[speclj "2.5.0"]]
   :test-paths ["spec"]
-  :resource-paths ["resources"]
+  :resource-paths ["gems"]
 
   )

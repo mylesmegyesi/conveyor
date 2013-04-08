@@ -27,10 +27,6 @@ def _install(dir)
   lein_task(dir, 'install')
 end
 
-def deploy(dir)
-  lein_task(dir, 'push')
-end
-
 def ci?
   ENV['CI'] == '1'
 end
@@ -61,23 +57,15 @@ def package(name, dependencies)
 
   desc "Gather dependencies for #{name}"
   task :deps do
-    if ci?
-      dependencies.each do |dep|
-        _install(dep)
-      end
-    else
-      checkouts(name, dependencies)
+    checkouts(name, dependencies) unless ci?
+    dependencies.each do |dep|
+      _install(dep)
     end
   end
 
   desc "Install #{name}"
   task :install do
     _install(name)
-  end
-
-  desc "Deploy #{name}"
-  task :deploy => :build do
-    deploy(name)
   end
 
   desc "Run #{name} specs"
@@ -110,19 +98,16 @@ def create_task_for_all(task_name)
   task task_name => PROJECTS.map {|project| "#{project}:#{task_name}"}
 end
 
-desc 'Setup checkouts for subprojets'
+desc 'Setup checkouts for subprojects'
 create_task_for_all(:checkouts)
 
-desc 'Run the specs Conveyor'
+desc 'Run the specs for conveyor'
 create_task_for_all(:spec)
 
-desc 'Deploy Conveyor'
-create_task_for_all(:deploy)
-
-desc 'Clean Conveyor'
+desc 'Clean all conveyor projects'
 create_task_for_all(:clean)
 
-desc 'Install Conveyor'
+desc 'Install all conveyor projects'
 create_task_for_all(:install)
 
 task :default => :spec

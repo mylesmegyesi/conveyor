@@ -1,6 +1,6 @@
 (defproject conveyor-sass "0.1.0"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
+  :description "Sass plugin for conveyor"
+  :url "https://github.com/mylesmegyesi/conveyor"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 

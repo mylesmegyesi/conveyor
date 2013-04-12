@@ -1,4 +1,4 @@
-(defproject conveyor-compass "0.1.0"
+(defproject conveyor-compass "0.1.1"
   :description "Compass plugin for Conveyor"
   :url "https://github.com/mylesmegyesi/conveyor"
   :license {:name "Eclipse Public License"
@@ -9,7 +9,7 @@
                  [zweikopf "0.1.0"]]
 
   :profiles {:dev {:dependencies [[speclj "2.5.0"]
-                                  [conveyor-sass "0.1.0"]]
+                                  [conveyor-sass "0.1.1"]]
                    :main speclj.main}}
 
   :plugins [[speclj "2.5.0"]]

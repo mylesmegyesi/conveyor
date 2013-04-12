@@ -1,4 +1,4 @@
-(defproject conveyor "0.1.0"
+(defproject conveyor "0.1.1"
   :description "An implementation of the Rails asset pipeline for Clojure"
   :url "https://github.com/mylesmegyesi/conveyor"
   :license {:name "Eclipse Public License"

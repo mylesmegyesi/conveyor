@@ -69,6 +69,12 @@
 
   (context "wrap-asset-pipeline middleware"
 
+    (with delayed-config
+          (delay (thread-pipeline-config
+                   (add-directory-to-load-path "test_fixtures/public/javascripts")
+                   (add-directory-to-load-path "test_fixtures/public/images")
+                   (add-directory-to-load-path "test_fixtures/public/stylesheets"))))
+
     (with config (thread-pipeline-config
                    (add-directory-to-load-path "test_fixtures/public/javascripts")
                    (add-directory-to-load-path "test_fixtures/public/images")
@@ -77,6 +83,16 @@
     (it "responds with the body of a javascript file when found"
       (let [handler (wrap-asset-pipeline (fn [_] :not-found) @config)
             expected-asset (first (find-asset @config "test1.js"))]
+        (should=
+          {:status 200
+           :headers {"Content-Length" (str (count (:body expected-asset)))
+                     "Content-Type" "application/javascript"}
+           :body (:body expected-asset)}
+          (handler (mr/request :get "/test1.js")))))
+
+    (it "accepts a delayed config"
+      (let [handler (wrap-asset-pipeline (fn [_] :not-found) @delayed-config)
+            expected-asset (first (find-asset @@delayed-config "test1.js"))]
         (should=
           {:status 200
            :headers {"Content-Length" (str (count (:body expected-asset)))

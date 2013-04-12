@@ -79,14 +79,25 @@
     (write-assets config assets)
     (write-manifest config assets)))
 
-(defn wrap-asset-pipeline [handler {:keys [prefix] :as config}]
+(defprotocol GetConfig
+  (get-config [this]))
+
+(extend-protocol GetConfig
+  java.lang.Object
+  (get-config [this] this)
+
+  clojure.lang.Delay
+  (get-config [this] @this))
+
+(defn wrap-asset-pipeline [handler -config]
   (fn [{:keys [uri] :as request}]
-    (if (.startsWith uri prefix)
-      (if-let [{:keys [body logical-path]} (last (find-asset config (remove-prefix uri prefix)))]
-        {:status 200
-         :headers {"Content-Length" (str (count body))
-                   "Content-Type" (mime-type-of logical-path)}
-         :body body}
-        (handler request))
-      (handler request))))
+    (let [{:keys [prefix] :as config} (get-config -config)]
+      (if (.startsWith uri prefix)
+        (if-let [{:keys [body logical-path]} (last (find-asset config (remove-prefix uri prefix)))]
+          {:status 200
+           :headers {"Content-Length" (str (count body))
+                     "Content-Type" (mime-type-of logical-path)}
+           :body body}
+          (handler request))
+        (handler request)))))
 

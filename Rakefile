@@ -16,7 +16,7 @@ end
 
 def jar_spec(dir)
   lein_task(dir, 'with-profile dev uberjar')
-  exec_in(dir, "java -jar target/#{dir}-0.1.0-standalone.jar")
+  exec_in(dir, "java -jar target/#{dir}-0.1.1-standalone.jar")
 end
 
 def spec(dir)
@@ -92,7 +92,11 @@ namespace 'conveyor-compass' do
   package('conveyor-compass', %w{conveyor conveyor-sass})
 end
 
-PROJECTS = %w(conveyor conveyor-sass conveyor-compass)
+namespace 'conveyor-coffeescript' do
+  package('conveyor-coffeescript', %w{conveyor})
+end
+
+PROJECTS = %w(conveyor conveyor-sass conveyor-compass conveyor-coffeescript)
 
 def create_task_for_all(task_name)
   task task_name => PROJECTS.map {|project| "#{project}:#{task_name}"}

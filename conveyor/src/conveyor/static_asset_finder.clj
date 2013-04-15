@@ -16,6 +16,6 @@
           logical-path (add-extension (remove-extension path) extension)
           file-path (get manifest logical-path)]
       (if file-path
-        [{:logical-path file-path}]
+        {:logical-path file-path}
         (throw-not-precompiled config logical-path)))))
 

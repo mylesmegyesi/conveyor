@@ -24,11 +24,8 @@
 (defn- path [config asset]
   (build-path config (base-path config asset)))
 
-(defn- paths [config assets]
-  (map #(path config %) assets))
-
-(defn- urls [{:keys [asset-host] :as config} assets]
-  (map #(str asset-host (path config %)) assets))
+(defn- url [{:keys [asset-host] :as config} asset]
+  (str asset-host (path config asset)))
 
 (defn- build-asset-finder [{:keys [search-strategy] :as config}]
   (case search-strategy
@@ -36,22 +33,30 @@
     :static static-find-asset))
 
 (defn find-asset
-  ([config path]
-     (find-asset config path (get-extension path)))
-  ([config path extension]
-    ((build-asset-finder config) config path extension)))
+  ([config asset-path]
+     (find-asset config asset-path (get-extension asset-path)))
+  ([config asset-path extension]
+    ((build-asset-finder config) config asset-path extension)))
+
+(defn- build-asset-path [config asset]
+  (when asset
+    (path config asset)))
 
 (defn asset-path
   ([config path]
-    (paths config (find-asset config path)))
+    (build-asset-path config (find-asset config path)))
   ([config path extension]
-    (paths config (find-asset config path extension))))
+    (build-asset-path config (find-asset config path extension))))
+
+(defn- build-asset-url [config asset]
+  (when asset
+    (url config asset)))
 
 (defn asset-url
-  ([config path]
-    (urls config (find-asset config path)))
-  ([config path extension]
-    (urls config (find-asset config path extension))))
+  ([config asset-path]
+    (build-asset-url config (find-asset config asset-path)))
+  ([config asset-path extension]
+    (build-asset-url config (find-asset config asset-path extension))))
 
 (defn- write-assets [config assets]
   (doseq [asset assets]
@@ -75,7 +80,7 @@
     (spit manifest (build-manifest config assets))))
 
 (defn precompile [config paths]
-  (let [assets (mapcat #(find-asset config %) paths)]
+  (let [assets (map #(find-asset config %) paths)]
     (write-assets config assets)
     (write-manifest config assets)))
 
@@ -93,7 +98,7 @@
   (fn [{:keys [uri] :as request}]
     (let [{:keys [prefix] :as config} (get-config -config)]
       (if (.startsWith uri prefix)
-        (if-let [{:keys [body logical-path]} (last (find-asset config (remove-prefix uri prefix)))]
+        (if-let [{:keys [body logical-path]} (find-asset config (remove-prefix uri prefix))]
           {:status 200
            :headers {"Content-Length" (str (count body))
                      "Content-Type" (mime-type-of logical-path)}

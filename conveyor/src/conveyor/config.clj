@@ -29,9 +29,14 @@
   `(-> default-compiler-config
      ~@body))
 
+(defn directory-path [path]
+  (let [directory (file path)]
+    (when (.exists directory)
+      (.getAbsolutePath directory))))
+
 (defn- normalize-resource-url [url]
   (if (= "file" (.getProtocol url))
-    (.getPath url)
+    (directory-path (.getPath url))
     (str url)))
 
 (defn resource-directory-path [directory-path resource-in-directory]
@@ -39,11 +44,6 @@
         relative-path (str directory-path with-leading-slash)]
     (when-let [resource-url (resource relative-path)]
       (base-dir (normalize-resource-url resource-url) with-leading-slash))))
-
-(defn directory-path [path]
-  (let [directory (file path)]
-    (when (.exists directory)
-      (.getAbsolutePath directory))))
 
 (defn add-to-load-path [config path]
   (append-to-key config :load-paths path))

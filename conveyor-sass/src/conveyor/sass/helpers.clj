@@ -4,8 +4,8 @@
 (declare ^:dynamic *current-config*)
 
 (defn asset-path [path]
-  (first (-asset-path *current-config* path)))
+  (-asset-path *current-config* path))
 
 (defn asset-url [path]
-  (first (-asset-url *current-config* path)))
+  (-asset-url *current-config* path))
 

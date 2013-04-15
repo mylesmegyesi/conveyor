@@ -14,6 +14,9 @@
 (defn set-found-path [context found-path]
   (assoc context :found-path found-path))
 
+(defn set-base-path [context base-path]
+  (assoc context :base-path base-path))
+
 (defn set-requested-extension [context requested-extension]
   (assoc context :requested-extension requested-extension))
 
@@ -43,6 +46,9 @@
 
 (defn get-found-path [context]
   (:found-path context))
+
+(defn get-base-path [context]
+  (:base-path context))
 
 (defn get-config [context]
   (:config context))

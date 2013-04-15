@@ -11,18 +11,14 @@
                  (set-manifest "test_fixtures/output/manifest1.edn")))
 
   (it "finds an asset in the output directory"
-    (let [found-assets (find-asset @config "test1.js")
-          asset (first found-assets)]
-      (should= 1 (count found-assets))
-      (should= "test1.js" (:logical-path asset))))
+    (let [found-asset (find-asset @config "test1.js")]
+      (should= "test1.js" (:logical-path found-asset))))
 
   (it "finds an asset in the output directory with a prefix"
       (let [config (set-manifest (add-prefix @config "/assets")
                                  "test_fixtures/output/manifest2.edn")
-          found-assets (find-asset config "test1.js")
-          asset (first found-assets)]
-      (should= 1 (count found-assets))
-      (should= "/assets/test1.js" (:logical-path asset))))
+          found-asset (find-asset config "test1.js")]
+      (should= "/assets/test1.js" (:logical-path found-asset))))
 
   (it "throws an exception if the requested file is not in the manifest"
     (should-throw

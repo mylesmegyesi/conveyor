@@ -1,7 +1,8 @@
 (ns conveyor.file-utils
-  (:require [clojure.java.io :refer [file as-file input-stream as-url copy output-stream]])
+  (:require [clojure.java.io :refer [file as-file input-stream as-url copy output-stream]]
+            [clojure.string :refer [replace-first]])
   (:import [org.apache.commons.io FilenameUtils FileUtils]
-           [java.net MalformedURLException]
+           [java.net MalformedURLException JarURLConnection URL]
            [java.io FileNotFoundException FileOutputStream]
            [java.util.zip GZIPOutputStream]))
 
@@ -14,6 +15,15 @@
 (defn get-extension [file-path]
   (FilenameUtils/getExtension file-path))
 
+(defn replace-extension [file-path extension]
+  (add-extension (remove-extension file-path) extension))
+
+(defn- jar-directory? [dir]
+  (try
+    (= "jar" (.getProtocol (as-url dir)))
+    (catch MalformedURLException e
+      false)))
+
 (defn- remove-leading-slash [path]
   (if (.startsWith path "/")
     (.substring path 1 (count path))
@@ -24,6 +34,36 @@
     (fn [base-path to-add]
       (FilenameUtils/concat base-path (remove-leading-slash to-add)))
     paths))
+
+(defmulti list-files #(if (jar-directory? %) :jar :file-system))
+
+(defmethod list-files :file-system [dir]
+  (map #(.getAbsolutePath %) (FileUtils/listFiles (file dir) nil true)))
+
+(defn- jar-entries [jar-path]
+  (.entries (.getJarFile (.openConnection (as-url jar-path)))))
+
+(def files-in-jar
+  (memoize
+    (fn [jar-path]
+      (loop [entries (jar-entries jar-path) results []]
+        (if (.hasMoreElements entries)
+          (recur entries (conj results (.getName (.nextElement entries))))
+          results)))))
+
+(def list-files-in-jar
+  (memoize
+    (fn [dir]
+      (let [jar-path (.substring dir 0 (+ 2 (.indexOf dir "!/")))
+            without-jar-path (replace-first dir jar-path "")]
+        (map
+          #(file-join jar-path %)
+          (filter
+            #(.startsWith % without-jar-path)
+            (files-in-jar jar-path)))))))
+
+(defmethod list-files :jar [dir]
+  (list-files-in-jar dir))
 
 (defn ensure-directory [dir]
   (when-not (.exists dir)

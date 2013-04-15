@@ -5,7 +5,7 @@
             [conveyor.coffeescript :refer :all])
   (:import [speclj SpecFailure]))
 
-(describe "a test"
+(describe "conveyor.coffeescript"
 
   (with base-dir (directory-path "test_fixtures/javascripts"))
   (with config (thread-pipeline-config
@@ -22,7 +22,7 @@ square = function(x) {
 "))
 
   (it "compiles a coffeescript file"
-    (let [found-asset (first (find-asset @config "test1.js"))]
+    (let [found-asset (find-asset @config "test1.js")]
       (should (.contains (test1-debug-output) (:body found-asset)))))
 
   (it "reports sytax errors"

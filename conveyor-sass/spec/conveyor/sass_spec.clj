@@ -33,6 +33,10 @@
       @stylesheets1)
     )
 
+  (defn test1-compressed-output []
+".content-navigation{border-color:#3bbfce;color:#2ca2af}.border{padding:8px;margin:8px;border-color:#3bbfce}
+")
+
   (defn test2-debug-output []
     (format
 "/* on line 4 of %s/test2.sass */
@@ -73,9 +77,17 @@
     (let [found-asset (find-asset @config "test1.css")]
       (should (.contains (test1-debug-output) (:body found-asset)))))
 
+  (it "compresses a scss file"
+    (let [found-asset (find-asset (set-compression @config true) "test1.css")]
+      (should (.contains (test1-compressed-output) (:body found-asset)))))
+
   (it "compiles a sass file"
     (let [found-asset (find-asset @config "test2.css")]
       (should (.contains (test2-debug-output) (:body found-asset)))))
+
+  (it "compiles using the asset-path and asset-url sass function"
+    (let [found-asset (find-asset @config "test3.css")]
+      (should (.contains (test3-debug-output) (:body found-asset)))))
 
   (it "compiles using the asset-path and asset-url sass function"
     (let [found-asset (find-asset @config "test3.css")]

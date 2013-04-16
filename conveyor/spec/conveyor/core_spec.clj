@@ -172,6 +172,12 @@
       (precompile @config ["test1.js"])
       (should= "var test = 1;\n" (slurp "test_output/test1.js")))
 
+    (it "throws an exception if the asset is not found"
+      (should-throw
+        Exception
+        "Asset not found: \"unknown.js\""
+        (precompile @config ["unknown.js"])))
+
     (it "includes the prefix in the file name"
       (let [config (add-prefix @config "/assets")]
         (precompile config ["test1.js"])

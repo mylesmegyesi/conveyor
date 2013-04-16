@@ -82,12 +82,16 @@
 (defn set-manifest [config manfiest-path]
   (assoc config :manifest manfiest-path))
 
+(defn set-compression [config compression]
+  (assoc config :compress compression))
+
 (def default-pipeline-config
   {:load-paths []
    :compilers []
    :prefix "/"
    :output-dir "public"
-   :search-strategy :dynamic})
+   :search-strategy :dynamic
+   :compress false})
 
 (defmacro thread-pipeline-config [& body]
   `(-> default-pipeline-config
@@ -144,6 +148,9 @@
 (defn- configure-search-strategy [config {:keys [search-strategy]}]
   (set-search-strategy config (or search-strategy (:search-strategy config))))
 
+(defn- configure-compression [config {:keys [compress]}]
+  (set-compression config (if (nil? compress) (:compress config) compress)))
+
 (defn configure-asset-pipeline [config]
   (thread-pipeline-config
     (configure-load-paths config)
@@ -153,5 +160,6 @@
     (configure-use-digest-path config)
     (configure-output-dir config)
     (configure-manifest config)
-    (configure-search-strategy config)))
+    (configure-search-strategy config)
+    (configure-compression config)))
 

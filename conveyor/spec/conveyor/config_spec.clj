@@ -121,6 +121,18 @@
       (let [config (configure-asset-pipeline {})]
         (should= :dynamic (:search-strategy config))))
 
+    (it "sets compression to true"
+      (let [config (configure-asset-pipeline {:compress true})]
+        (should= true (:compress config))))
+
+    (it "sets compression to false"
+      (let [config (configure-asset-pipeline {:compress false})]
+        (should= false (:compress config))))
+
+    (it "defaults compression to false"
+      (let [config (configure-asset-pipeline {})]
+        (should= false (:compress config))))
+
     )
 
   )

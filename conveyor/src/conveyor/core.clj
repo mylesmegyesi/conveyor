@@ -80,7 +80,9 @@
     (spit manifest (build-manifest config assets))))
 
 (defn precompile [config paths]
-  (let [assets (map #(find-asset config %) paths)]
+  (let [assets (map #(if-let [asset (find-asset config %)]
+                       asset
+                       (throw (Exception. (format "Asset not found: \"%s\"" %)))) paths)]
     (write-assets config assets)
     (write-manifest config assets)))
 

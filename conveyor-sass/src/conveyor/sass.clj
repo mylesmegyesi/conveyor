@@ -18,7 +18,7 @@
     (render-string body
                    :load-paths (:load-paths config)
                    :syntax (keyword input-extension)
-                   :style :expanded
+                   :style (if (:compress config) :compressed :expanded)
                    :filename file-path
                    :trace-selectors true)))
 

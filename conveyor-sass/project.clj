@@ -1,11 +1,11 @@
-(defproject conveyor-sass "0.1.4"
+(defproject conveyor-sass "0.1.5"
   :description "Sass plugin for conveyor"
   :url "https://github.com/mylesmegyesi/conveyor"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [conveyor "0.1.4"]
+                 [conveyor "0.1.5"]
                  [sass "3.2.6"]
                  [zweikopf "0.1.0"]]
 

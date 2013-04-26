@@ -37,13 +37,18 @@
 
 (defmulti list-files #(if (jar-directory? %) :jar :file-system))
 
+(def ^:private list-files-on-system
+  (memoize
+    (fn [dir]
+      (map #(.getAbsolutePath %) (FileUtils/listFiles (file dir) nil true)))))
+
 (defmethod list-files :file-system [dir]
-  (map #(.getAbsolutePath %) (FileUtils/listFiles (file dir) nil true)))
+  (list-files-on-system dir))
 
 (defn- jar-entries [jar-path]
   (.entries (.getJarFile (.openConnection (as-url jar-path)))))
 
-(def files-in-jar
+(def ^:private files-in-jar
   (memoize
     (fn [jar-path]
       (loop [entries (jar-entries jar-path) results []]
@@ -51,7 +56,7 @@
           (recur entries (conj results (.getName (.nextElement entries))))
           results)))))
 
-(def list-files-in-jar
+(def ^:private list-files-in-jar
   (memoize
     (fn [dir]
       (let [jar-path (.substring dir 0 (+ 2 (.indexOf dir "!/")))

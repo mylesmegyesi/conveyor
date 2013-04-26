@@ -14,11 +14,14 @@
 
   (defn test1-debug-output []
     (str
-"var square;
+"(function() {
+  var square;
 
-square = function(x) {
-  return x * x;
-};
+  square = function(x) {
+    return x * x;
+  };
+
+}).call(this);
 "))
 
   (it "compiles a coffeescript file"

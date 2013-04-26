@@ -1,9 +1,9 @@
-(ns conveyor.static-asset-finder-spec
+(ns conveyor.finder.static-spec
   (:require [speclj.core :refer :all]
             [conveyor.config :refer :all]
             [conveyor.core :refer [find-asset]]))
 
-(describe "conveyor.static-asset-finder"
+(describe "conveyor.finder.static"
 
   (with config (thread-pipeline-config
                  (set-search-strategy :static)
@@ -30,7 +30,7 @@
           found-asset (find-asset config "test1.js")]
       (should= "/assets/test1.js" (:logical-path found-asset))))
 
-  (it "throws an exception if the requested file is not in the manifest"
+  (xit "throws an exception if the requested file is not in the manifest"
     (should-throw
       Exception
       "unknown.js is not in the manifest \"test_fixtures/output/manifest1.edn\". It has not been precompiled."

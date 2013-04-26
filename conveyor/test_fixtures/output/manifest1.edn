@@ -1,4 +1,6 @@
 {
-  "test1.js" "test1.js"
-  "jquery.ui.autocomplete.js" "jquery.ui.autocomplete.js"
+  "test1.js" {:logical-path "test1.js"
+              :digest-path "test1-200368af90cc4c6f4f1ddf36f97a279e.js"
+              :digest "200368af90cc4c6f4f1ddf36f97a279e"}
+  "jquery.ui.autocomplete.js" {:logical-path "jquery.ui.autocomplete.js"}
 }

@@ -1,11 +1,11 @@
 (ns conveyor.core
   (:require [clojure.java.io :refer [file writer copy]]
-            [clojure.string :refer [replace-first]]
+            [clojure.string :refer [replace-first] :as clj-str]
             [pantomime.mime :refer [mime-type-of]]
             [conveyor.file-utils :refer :all]
             [conveyor.manfiest :refer [manifest-path]]
-            [conveyor.dynamic-asset-finder :refer [find-asset] :rename {find-asset dynamic-find-asset}]
-            [conveyor.static-asset-finder :refer [find-asset] :rename {find-asset static-find-asset}]))
+            [conveyor.finder.interface :refer [get-asset get-logical-path get-digest-path]]
+            [conveyor.finder.factory :refer [make-asset-finder]]))
 
 (defn- remove-prefix [uri prefix]
   (let [without-prefix (replace-first uri prefix "")]
@@ -13,64 +13,81 @@
       (replace-first without-prefix "/" "")
       without-prefix)))
 
-(defn- build-path [config path]
-  (file-join "/" (:prefix config) path))
-
-(defn- base-path [config asset]
-  (if (:use-digest-path config)
-    (:digest-path asset)
-    (:logical-path asset)))
-
-(defn- path [config asset]
-  (build-path config (base-path config asset)))
-
-(defn- url [{:keys [asset-host] :as config} asset]
-  (str asset-host (path config asset)))
-
 (defn- build-asset-finder [{:keys [search-strategy] :as config}]
-  (case search-strategy
-    :dynamic dynamic-find-asset
-    :static static-find-asset))
+  (make-asset-finder search-strategy config))
+
+(defn- remove-asset-digest [path extension]
+  (let [[match digest] (first (re-seq #"(?sm)-([0-9a-f]{7,40})\.[^.]+$" path))]
+    (if match
+      (let [without-match (clj-str/replace path match "")]
+        (if (empty? extension)
+          [digest without-match]
+          [digest (str without-match "." extension)]))
+      [nil path])))
+
+(defn- call-fn-for-path [f config asset-path]
+  (let [output-extension (get-extension asset-path)]
+    (if-let [found (f config asset-path output-extension)]
+      found
+      (if-let [found (f config asset-path "")]
+        found
+        (f config (remove-extension asset-path) output-extension)))))
 
 (defn find-asset
   ([config asset-path]
-     (find-asset config asset-path (get-extension asset-path)))
+    (call-fn-for-path find-asset config asset-path))
   ([config asset-path extension]
-    ((build-asset-finder config) config asset-path extension)))
+    (let [[digest path] (remove-asset-digest asset-path extension)
+          asset (get-asset (build-asset-finder config) path extension)]
+    (if digest
+      (when (= digest (:digest asset))
+        asset)
+      asset))))
 
-(defn- build-asset-path [config asset]
-  (when asset
-    (path config asset)))
+(defn- build-path [config path]
+  (when path
+    (file-join "/" (:prefix config) path)))
+
+(defn- get-path [config path extension]
+  (if (:use-digest-path config)
+    (build-path config (get-digest-path (build-asset-finder config) path extension))
+    (build-path config (get-logical-path (build-asset-finder config) path extension))))
 
 (defn asset-path
   ([config path]
-    (build-asset-path config (find-asset config path)))
+    (call-fn-for-path get-path config path))
   ([config path extension]
-    (build-asset-path config (find-asset config path extension))))
+    (get-path config path extension)))
 
-(defn- build-asset-url [config asset]
-  (when asset
-    (url config asset)))
+(defn- build-url [{:keys [asset-host] :as config} path]
+  (when path
+    (str asset-host path)))
 
 (defn asset-url
-  ([config asset-path]
-    (build-asset-url config (find-asset config asset-path)))
-  ([config asset-path extension]
-    (build-asset-url config (find-asset config asset-path extension))))
+  ([config path]
+    (build-url config (asset-path config path)))
+  ([config path extension]
+    (build-url config (asset-path config path extension))))
+
+(defn- write-asset-path [config asset path]
+  (let [file-name (file-join (:output-dir config) path)]
+    (ensure-directory-of-file file-name)
+    (write-file file-name (:body asset))
+    (write-gzipped-file file-name (:body asset))))
 
 (defn- write-assets [config assets]
   (doseq [asset assets]
-    (let [file-name (file-join (:output-dir config) (path config asset))]
-      (ensure-directory-of-file file-name)
-      (write-file file-name (:body asset))
-      (write-gzipped-file file-name (:body asset)))))
+    (write-asset-path config asset (build-path config (:logical-path asset)))
+    (write-asset-path config asset (build-path config (:digest-path asset)))))
 
 (defn- build-manifest [config assets]
   (reduce
     (fn [manifest asset]
       (assoc manifest
              (:logical-path asset)
-             (base-path config asset)))
+             {:logical-path (:logical-path asset)
+              :digest-path (:digest-path asset)
+              :digest (:digest asset)}))
     {}
     assets))
 

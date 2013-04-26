@@ -1,18 +1,19 @@
-(ns conveyor.dynamic-asset-finder
+(ns conveyor.finder.dynamic
   (:require [clojure.java.io :refer [file]]
             [clojure.string :refer [join replace-first] :as clj-str]
             [digest :refer [md5]]
             [conveyor.compile :refer [compile-asset]]
             [conveyor.context :refer :all]
-            [conveyor.file-utils :refer :all]))
+            [conveyor.file-utils :refer :all]
+            [conveyor.finder.interface :refer [AssetFinder]]))
 
-(defn- build-asset [base-path extension asset-body]
+(defn- build-asset [logical-file-path output-extension asset-body]
   (let [digest (md5 asset-body)
-        file-name (remove-extension base-path)]
+        file-name (remove-extension logical-file-path)]
     {:body asset-body
-     :logical-path (add-extension file-name extension)
+     :logical-path (add-extension file-name output-extension)
      :digest digest
-     :digest-path (add-extension (str file-name "-" digest) extension)}))
+     :digest-path (add-extension (str file-name "-" digest) output-extension)}))
 
 (defn- format-asset-path [asset-path]
   (format "\"%s\"" asset-path))
@@ -126,7 +127,7 @@
 
 (defn- read-asset [context on-asset-read]
   (if-let [file (find-file context)]
-    (let [{:keys [absolute-path logical-path]} (find-file context)
+    (let [{:keys [absolute-path logical-path]} file
           body (read-file absolute-path)]
       (on-asset-read
         (-> context
@@ -147,28 +148,29 @@
                 (get-asset-extension result-context)
                 (get-asset-body result-context)))))))
 
-(defn- remove-asset-digest [path extension]
-  (let [[match digest] (first (re-seq #"(?sm)-([0-9a-f]{7,40})\.[^.]+$" path))]
-    (if match
-      (let [without-match (clj-str/replace path match "")]
-        (if (empty? extension)
-          [digest without-match]
-          [digest (str without-match "." extension)]))
-      [nil path])))
+(defn- make-context [config path extension]
+  (make-serve-context
+    (set-config config)
+    (set-requested-path path)
+    (set-requested-extension extension)))
 
-(defn find-asset
-  ([config path]
-    (if-let [found (find-asset config path (get-extension path))]
-      found
-      (find-asset config path "")))
-  ([config path extension]
-    (let [[digest path] (remove-asset-digest path extension)
-          asset (serve-asset (make-serve-context
-                                (set-config config)
-                                (set-requested-path path)
-                                (set-requested-extension extension)))]
-      (if digest
-        (when (= digest (:digest asset))
-          asset)
-        asset))))
+(defn find-asset [config path extension]
+  (serve-asset (make-context config path extension)))
+
+(deftype DynamicAssetFinder [config]
+  AssetFinder
+  (get-asset [this path extension]
+    (serve-asset (make-context config path extension)))
+
+  (get-logical-path [this path extension]
+    (when-let [file (find-file (make-context config path extension))]
+      (:logical-path file)))
+
+  (get-digest-path [this path extension]
+    (:digest-path (find-asset config path extension)))
+
+  )
+
+(defn make-dynamic-asset-finder [config]
+  (DynamicAssetFinder. config))
 

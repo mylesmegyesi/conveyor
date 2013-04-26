@@ -164,7 +164,7 @@
 
   (get-logical-path [this path extension]
     (when-let [file (find-file (make-context config path extension))]
-      (:logical-path file)))
+      (replace-extension (:logical-path file) extension)))
 
   (get-digest-path [this path extension]
     (:digest-path (find-asset config path extension)))

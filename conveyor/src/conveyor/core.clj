@@ -44,6 +44,19 @@
         asset)
       asset))))
 
+(defn- throw-asset-not-found [path]
+  (throw (Exception. (format "Asset not found: %s" path))))
+
+(defn find-asset!
+  ([config path]
+    (if-let [asset (find-asset config path)]
+      asset
+      (throw-asset-not-found path)))
+  ([config path extension]
+    (if-let [asset (find-asset config path extension)]
+      asset
+      (throw-asset-not-found path))))
+
 (defn- build-path [config path]
   (when path
     (file-join "/" (:prefix config) path)))
@@ -53,11 +66,20 @@
     (build-path config (get-digest-path (build-asset-finder config) path extension))
     (build-path config (get-logical-path (build-asset-finder config) path extension))))
 
+(defn- get-path! [config path extension]
+  (if-let [path (get-path config path extension)]
+    path
+    (throw-asset-not-found path)))
+
 (defn asset-path
   ([config path]
-    (call-fn-for-path get-path config path))
+    (if-let [found (call-fn-for-path get-path config path)]
+      found
+      (throw-asset-not-found path)))
   ([config path extension]
-    (get-path config path extension)))
+    (if-let [found (get-path config path extension)]
+      found
+      (throw-asset-not-found path))))
 
 (defn- build-url [{:keys [asset-host] :as config} path]
   (when path
@@ -95,11 +117,6 @@
   (let [manifest (manifest-path config)]
     (ensure-directory-of-file manifest)
     (spit manifest (build-manifest config assets))))
-
-(defn- find-asset! [config path]
-  (if-let [asset (find-asset config path)]
-    asset
-    (throw (Exception. (format "Asset not found: \"%s\"" path)))))
 
 (defn precompile [config paths]
   (let [assets (map #(find-asset! config %) paths)]

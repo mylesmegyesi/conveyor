@@ -45,6 +45,7 @@
           (prepare-asset @config "test1.js")
           (let [asset (find-asset @config "test1.js")]
             (should= "test1.js" (:logical-path asset))
+            (should= "/test1.js" (asset-path @config "test1.js"))
             (should= asset (find-asset @config (:logical-path asset)))))
 
         (it "returns the digest and digest path"
@@ -59,6 +60,7 @@
                 asset (find-asset config "test2.css")]
             (should= ".test2 { color: black; }\n" (:body asset))
             (should= "test2.css" (:logical-path asset))
+            (should= "/test2.css" (asset-path config "test2.css"))
             (should= "test2-9d7e7252425acc78ff419cf3d37a7820.css" (:digest-path asset))))
 
         (it "finds an asset with a resource directory on its load path"
@@ -67,11 +69,19 @@
                 asset (find-asset config "test1.css")]
             (should= ".test1 { color: white; }\n" (:body asset))
             (should= "test1.css" (:logical-path asset))
+            (should= "/test1.css" (asset-path config "test1.css"))
             (should= "test1-89df887049f959cbe331b1da471f7e24.css" (:digest-path asset))))
 
         (it "returns nil if the asset could not be found"
           (prepare-asset @config "test1.js")
           (should-be-nil (find-asset @config "non-existant-file")))
+
+        (it "! throws if the asset could not be found"
+          (prepare-asset @config "test1.js")
+          (should-throw
+            Exception
+            "Asset not found: non-existant-file"
+            (find-asset! @config "non-existant-file")))
 
         (with fake-compiler-config (add-compiler-config
                                      @config
@@ -84,6 +94,7 @@
           (let [asset (find-asset @fake-compiler-config "test2.fake-output")]
             (should= "Some fake thing\n" (:body asset))
             (should= "test2.fake-output" (:logical-path asset))
+            (should= "/test2.fake-output" (asset-path @fake-compiler-config "test2.fake-output"))
             (should= "test2-979d812cfd0a7dc744af9e083a63ff10.fake-output" (:digest-path asset))))
 
         (it "finds assets using the output extensions given by compilers if the file name has many dots"
@@ -91,6 +102,8 @@
           (let [asset (find-asset @fake-compiler-config "test.2" "fake-output")]
             (should= "Some fake thing with dots\n" (:body asset))
             (should= "test.2.fake-output" (:logical-path asset))
+            (should= "/test.2.fake-output" (asset-path @fake-compiler-config "test.2" "fake-output"))
+            (should= "/test.2.fake-output" (asset-path @fake-compiler-config "test.2.fake-output"))
             (should= "test.2-e2cb442c231d4d2420a64a834c86324c.fake-output" (:digest-path asset))))
 
         (it "finds assets using the input extensions given by compilers if the file name has many dots"
@@ -98,14 +111,9 @@
           (let [asset (find-asset @fake-compiler-config "test.2" "fake")]
             (should= "Some fake thing with dots\n" (:body asset))
             (should= "test.2.fake" (:logical-path asset))
+            (should= "/test.2.fake" (asset-path @fake-compiler-config "test.2" "fake"))
+            (should= "/test.2.fake" (asset-path @fake-compiler-config "test.2.fake"))
             (should= "test.2-e2cb442c231d4d2420a64a834c86324c.fake" (:digest-path asset))))
-
-        (xit "file that does not have an extension and matches an compiler with one output extension"
-          (prepare-asset @fake-compiler-config "test2.fake-output")
-          (let [asset (find-asset @fake-compiler-config "test2")]
-            (should= "Some fake thing\n" (:body asset))
-            (should= "test2.fake-output" (:logical-path asset))
-            (should= "test2-979d812cfd0a7dc744af9e083a63ff10.fake-output" (:digest-path asset))))
 
         (it "returns nil if the file is found, but the requested file extension does not match any compilers output extensions"
           (prepare-asset @fake-compiler-config "test2.fake-output")
@@ -122,7 +130,9 @@
           (prepare-asset @fake1-compiler-config "test3.fake-output")
           (let [asset (find-asset @fake1-compiler-config "test3.fake-output")]
             (should= "Some fake thing1\n" (:body asset))
-            (should= "test3.fake-output" (:logical-path asset))))
+            (should= "test3.fake-output" (:logical-path asset))
+            (should= "/test3.fake-output" (asset-path @fake1-compiler-config "test3.fake-output"))
+            (should= "/test3.fake-output" (asset-path @fake1-compiler-config "test3" "fake-output"))))
 
         (defn test-compiler [config body filename input-extension output-extension]
           (str body "compiled with " filename ":" input-extension ":" output-extension))
@@ -139,7 +149,9 @@
           (let [base-path (directory-path "test_fixtures/public/javascripts")
                 asset (find-asset @test-compiler-config "test3.fake-output")]
             (should= (format "Some fake thing1\ncompiled with %s:fake1:fake-output" (str base-path "/test3.fake1")) (:body asset))
-            (should= "test3.fake-output" (:logical-path asset))))
+            (should= "test3.fake-output" (:logical-path asset))
+            (should= "/test3.fake-output" (asset-path @test-compiler-config "test3.fake-output"))
+            (should= "/test3.fake-output" (asset-path @test-compiler-config "test3" "fake-output"))))
 
         (it "a compiler with multiple extensions"
             (let [configured-compiler (add-compiler-config @config (configure-compiler
@@ -162,14 +174,12 @@
                 txt-asset (find-asset @markdown-config "multiple_outputs.txt")]
             (should= "Multiple outputs\n" (:body html-asset))
             (should= "multiple_outputs.html" (:logical-path html-asset))
+            (should= "/multiple_outputs.html" (asset-path @markdown-config "multiple_outputs.html"))
+            (should= "/multiple_outputs.html" (asset-path @markdown-config "multiple_outputs" "html"))
             (should= "Multiple outputs\n" (:body txt-asset))
-            (should= "multiple_outputs.txt" (:logical-path txt-asset))))
-
-        (xit "compiles the asset for a file that has no requested extension and one output extension"
-          (let [base-path (directory-path "test_fixtures/public/javascripts")
-                asset (find-asset @test-compiler-config "test3")]
-            (should= (format "Some fake thing1\ncompiled with %s:fake1:fake-output" (str base-path "/test3.fake1")) (:body asset))
-            (should= "test3.fake-output" (:logical-path asset))))
+            (should= "multiple_outputs.txt" (:logical-path txt-asset))
+            (should= "/multiple_outputs.txt" (asset-path @markdown-config "multiple_outputs.txt"))
+            (should= "/multiple_outputs.txt" (asset-path @markdown-config "multiple_outputs" "txt"))))
 
         (with markdown-html-config (configure-compiler
                                      (add-input-extension "markdown")
@@ -187,8 +197,12 @@
                 txt-asset (find-asset configured-compiler "multiple_outputs.txt")]
             (should= "Multiple outputs\n" (:body html-asset))
             (should= "multiple_outputs.html" (:logical-path html-asset))
+            (should= "/multiple_outputs.html" (asset-path configured-compiler "multiple_outputs.html"))
+            (should= "/multiple_outputs.html" (asset-path configured-compiler "multiple_outputs" "html"))
             (should= "Multiple outputs\n" (:body txt-asset))
-            (should= "multiple_outputs.txt" (:logical-path txt-asset))))
+            (should= "multiple_outputs.txt" (:logical-path txt-asset))
+            (should= "/multiple_outputs.txt" (asset-path configured-compiler "multiple_outputs.txt"))
+            (should= "/multiple_outputs.txt" (asset-path configured-compiler "multiple_outputs" "txt"))))
 
         (it "finds an asset using the digest path"
           (prepare-asset @markdown-config "test1.js")
@@ -209,19 +223,25 @@
           (prepare-asset @coffeescript-config "test6.js")
           (let [asset (find-asset @coffeescript-config "test6.js")]
             (should= "var index = 1;\n" (:body asset))
-            (should= "test6.js" (:logical-path asset))))
+            (should= "test6.js" (:logical-path asset))
+            (should= "/test6.js" (asset-path @coffeescript-config "test6.js"))
+            (should= "/test6.js" (asset-path @coffeescript-config "test6" "js"))))
 
         (it "finds an index file with dots in the directory name"
           (prepare-asset @coffeescript-config "test.6.js")
           (let [asset (find-asset @coffeescript-config "test.6.js")]
             (should= "var index6 = 1;\n" (:body asset))
-            (should= "test.6.js" (:logical-path asset))))
+            (should= "test.6.js" (:logical-path asset))
+            (should= "/test.6.js" (asset-path @coffeescript-config "test.6" "js"))
+            (should= "/test.6.js" (asset-path @coffeescript-config "test.6.js"))))
 
         (it "finds an index file with a matching output extension"
           (prepare-asset @coffeescript-config "test7.js")
           (let [asset (find-asset @coffeescript-config "test7.js")]
             (should= "var test7 = 1;\n" (:body asset))
-            (should= "test7.js" (:logical-path asset))))
+            (should= "test7.js" (:logical-path asset))
+            (should= "/test7.js" (asset-path @coffeescript-config "test7.js"))
+            (should= "/test7.js" (asset-path @coffeescript-config "test7" "js"))))
 
         ))
 
@@ -250,13 +270,26 @@
           (prepare-asset @config "test1.js")
           (should= "/test1.js" (asset-path @config "test1.js")))
 
-        (it "returns nil if the file does not exist"
+        (it "throws if the file does not exist"
           (prepare-asset @config "test1.js")
-          (should-be-nil (asset-path @config "unknown.js")))
+          (should-throw
+            Exception
+            "Asset not found: unknown.js"
+            (asset-path @config "unknown.js")))
 
         (it "returns the logical path with an given output extension"
           (prepare-asset @config "test1.js")
           (should= "/test1.js" (asset-path @config "test1" "js")))
+
+        (with coffeescript-config (add-compiler-config
+                                    @config
+                                    (configure-compiler
+                                      (add-input-extension "coffee")
+                                      (add-output-extension "js"))))
+
+        (it "returns the logical path of an asset with dots in the name"
+          (prepare-asset @coffeescript-config "test.6.js")
+          (should= "/test.6.js" (asset-path @coffeescript-config "test.6" "js")))
 
         (it "appends the prefix"
           (let [config (add-prefix @config "/assets")]
@@ -294,7 +327,10 @@
       (should= "http://cloudfront.net/test1.js" (asset-url @config "test1.js")))
 
     (it "returns nil if the file does not exist"
-      (should-be-nil (asset-url @config "unknown.js")))
+      (should-throw
+        Exception
+        "Asset not found: unknown.js"
+        (asset-url @config "unknown.js")))
 
     (it "returns the path if the host is nil"
       (let [config (set-asset-host @config nil)]
@@ -419,7 +455,7 @@
     (it "throws an exception if the asset is not found"
       (should-throw
         Exception
-        "Asset not found: \"unknown.js\""
+        "Asset not found: unknown.js"
         (precompile @config ["unknown.js"])))
 
     (it "includes the prefix in the file name"

@@ -15,8 +15,7 @@
       (should= "test1.js" (:logical-path found-asset))))
 
   (it "finds an asset that has a dot in the name"
-    (let [found-asset (find-asset @config "jquery.ui.autocomplete" "js")]
-      (should= "jquery.ui.autocomplete.js" (:logical-path found-asset))))
+    (let [found-asset (find-asset @config "jquery.ui.autocomplete" "js")] (should= "jquery.ui.autocomplete.js" (:logical-path found-asset))))
 
   (it "finds an asset in the output directory with a prefix"
       (let [config (set-manifest (add-prefix @config "/assets")
@@ -29,11 +28,5 @@
                                  "test_fixtures/output/manifest2.edn")
           found-asset (find-asset config "test1.js")]
       (should= "/assets/test1.js" (:logical-path found-asset))))
-
-  (xit "throws an exception if the requested file is not in the manifest"
-    (should-throw
-      Exception
-      "unknown.js is not in the manifest \"test_fixtures/output/manifest1.edn\". It has not been precompiled."
-      (find-asset @config "unknown.js")))
 
   )

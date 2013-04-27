@@ -96,7 +96,11 @@ namespace 'conveyor-coffeescript' do
   package('conveyor-coffeescript', %w{conveyor})
 end
 
-PROJECTS = %w(conveyor conveyor-sass conveyor-compass conveyor-coffeescript)
+namespace 'conveyor-closure' do
+  package('conveyor-closure', %w{conveyor})
+end
+
+PROJECTS = %w(conveyor conveyor-sass conveyor-compass conveyor-coffeescript conveyor-closure)
 
 def create_task_for_all(task_name)
   task task_name => PROJECTS.map {|project| "#{project}:#{task_name}"}

@@ -4,36 +4,27 @@
             [pantomime.mime :refer [mime-type-of]]
             [conveyor.file-utils :refer :all]
             [conveyor.compile :refer [compile-asset]]
-            [conveyor.config :refer [compile?]]
+            [conveyor.compress :refer [compress-asset]]
+            [conveyor.config :refer [compile? compress?]]
             [conveyor.manfiest :refer [manifest-path]]
             [conveyor.finder.interface :refer [get-asset get-logical-path get-digest-path]]
             [conveyor.finder.factory :refer [make-asset-finder]]))
 
-(defn- remove-prefix [uri prefix]
-  (let [without-prefix (replace-first uri prefix "")]
-    (if (.startsWith without-prefix "/")
-      (replace-first without-prefix "/" "")
-      without-prefix)))
+(defn path-and-extention-variations [path]
+  (let [output-extension (get-extension path)]
+    [[path output-extension]
+     [path ""]
+     [(remove-extension path) output-extension]]))
 
-(defn- build-asset-finder [{:keys [search-strategy] :as config}]
-  (make-asset-finder search-strategy config))
-
-(defn- remove-asset-digest [path extension]
-  (let [[match digest] (first (re-seq #"(?sm)-([0-9a-f]{7,40})\.[^.]+$" path))]
-    (if match
-      (let [without-match (clj-str/replace path match "")]
-        (if (empty? extension)
-          [digest without-match]
-          [digest (str without-match "." extension)]))
-      [nil path])))
+(defn- first-not-nil [m]
+  (first (filter (complement nil?) m)))
 
 (defn- call-fn-for-path [f config asset-path]
-  (let [output-extension (get-extension asset-path)]
-    (if-let [found (f config asset-path output-extension)]
-      found
-      (if-let [found (f config asset-path "")]
-        found
-        (f config (remove-extension asset-path) output-extension)))))
+  (first-not-nil
+    (map
+      (fn [[path extension]]
+        (f config path extension))
+      (path-and-extention-variations asset-path))))
 
 (defn identity-pipeline-fn [config path extension asset]
   asset)
@@ -42,6 +33,9 @@
   (if (:pipeline-enabled config)
     [(if (compile? config)
        compile-asset
+       identity-pipeline-fn)
+     (if (compress? config)
+       compress-asset
        identity-pipeline-fn)]
     []))
 
@@ -57,7 +51,7 @@
 (declare ^:dynamic *pipeline*)
 
 (defn build-pipeline [config]
-  {:finder (build-asset-finder config)
+  {:finder (make-asset-finder config)
    :pipeline-fn (build-pipeline-fn config)})
 
 (defn pipeline []
@@ -79,11 +73,23 @@
                             (:extension asset))))
     asset))
 
+(defn- remove-asset-digest [path extension]
+  (let [[match digest] (first (re-seq #"(?sm)-([0-9a-f]{7,40})\.[^.]+$" path))]
+    (if match
+      (let [without-match (clj-str/replace path match "")]
+        (if (empty? extension)
+          [digest without-match]
+          [digest (str without-match "." extension)]))
+      [nil path])))
+
 (defmacro with-pipeline [config & body]
   `(if (bound? #'*pipeline*)
      ~@body
      (binding [*pipeline* (build-pipeline ~config)]
        ~@body)))
+
+(defn- throw-asset-not-found [path]
+  (throw (Exception. (format "Asset not found: %s" path))))
 
 (defn find-asset
   ([config asset-path]
@@ -97,9 +103,6 @@
             (when (= digest (:digest asset))
               (normalize-paths asset))
             (normalize-paths asset)))))))
-
-(defn- throw-asset-not-found [path]
-  (throw (Exception. (format "Asset not found: %s" path))))
 
 (defn find-asset!
   ([config path]
@@ -134,13 +137,10 @@
         (throw-asset-not-found path))))
   ([config path extension]
     (with-pipeline config
-      (if-let [found (get-path config path extension)]
-        found
-        (throw-asset-not-found path)))))
+      (get-path! config path extension))))
 
 (defn- build-url [{:keys [asset-host] :as config} path]
-  (when path
-    (str asset-host path)))
+  (str asset-host path))
 
 (defn asset-url
   ([config path]
@@ -191,6 +191,12 @@
 
   clojure.lang.Delay
   (get-config [this] @this))
+
+(defn- remove-prefix [uri prefix]
+  (let [without-prefix (replace-first uri prefix "")]
+    (if (.startsWith without-prefix "/")
+      (replace-first without-prefix "/" "")
+      without-prefix)))
 
 (defn wrap-asset-pipeline [handler -config]
   (let [config (get-config -config)

@@ -93,6 +93,10 @@
         (should= "configured" (:test-config config))
         (should== [style-path js-path] (:load-paths config))))
 
+    (it "configures a plugin that takes options"
+      (let [config (configure-asset-pipeline {:plugins [{:plugin-name :option-plugin :option1 2}]})]
+        (should= 2 (:option1 config))))
+
     (it "configures the asset host"
       (let [config (configure-asset-pipeline {:asset-host "test-host"})]
         (should= "test-host" (:asset-host config))))

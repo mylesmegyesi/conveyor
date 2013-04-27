@@ -5,6 +5,9 @@
 (defn compile? [config]
   (and (:pipeline-enabled config) (:compile config)))
 
+(defn compress? [config]
+  (and (:pipeline-enabled config) (:compress config)))
+
 (defn- base-dir [full-path sub-path]
   (first (split full-path (re-pattern sub-path) 2)))
 
@@ -14,14 +17,23 @@
 (defn add-compiler-config [config compiler-config]
   (append-to-key config :compilers compiler-config))
 
+(defn add-compressor-config [config compressor-config]
+  (append-to-key config :compressors compressor-config))
+
 (defn add-output-extension [config extension]
   (append-to-key config :output-extensions extension))
 
 (defn add-input-extension [config extension]
   (append-to-key config :input-extensions extension))
 
+(defn set-input-extension [config extension]
+  (assoc config :input-extension extension))
+
 (defn set-compiler [config compiler]
   (assoc config :compiler compiler))
+
+(defn set-compressor [config compressor]
+  (assoc config :compressor compressor))
 
 (def default-compiler-config
   {:input-extensions []
@@ -30,6 +42,14 @@
 
 (defmacro configure-compiler [& body]
   `(-> default-compiler-config
+     ~@body))
+
+(def default-compressor-config
+  {:input-extension nil
+   :compressor (fn [config body filename] body)})
+
+(defmacro configure-compressor [& body]
+  `(-> default-compressor-config
      ~@body))
 
 (defn directory-path [path]
@@ -97,6 +117,7 @@
 (def default-pipeline-config
   {:load-paths []
    :compilers []
+   :compressors []
    :prefix "/"
    :output-dir "public"
    :search-strategy :dynamic
@@ -110,12 +131,17 @@
 
 (defn- configure-plugins [config {:keys [plugins]}]
   (reduce
-    (fn [config plugin-name]
-      (let [ns-sym (symbol (format "conveyor.%s" (name plugin-name)))]
+    (fn [config plugin]
+      (let [[plugin-name options] (if (map? plugin)
+                                    [(:plugin-name plugin) (dissoc plugin :plugin-name)]
+                                    [plugin nil])
+            ns-sym (symbol (format "conveyor.%s" (name plugin-name)))]
         (require ns-sym)
         (let [configure-sym (symbol (format "configure-%s" (name plugin-name)))
               configure-fn (ns-resolve (the-ns ns-sym) configure-sym)]
-          (configure-fn config))))
+          (if options
+            (configure-fn config options)
+            (configure-fn config)))))
     config
     plugins))
 

@@ -174,6 +174,40 @@
             (should= "/test3.fake1" (asset-path config "test3.fake1"))
             (should= "/test3.fake1" (asset-path config "test3" "fake1"))))
 
+        (defn test-compressor [config body filename]
+          (str body "compressed"))
+
+        (with test-compressor-config (-> @config
+                                       (set-compression true)
+                                       (add-compressor-config
+                                         (configure-compressor
+                                           (set-compressor test-compressor)
+                                           (set-input-extension "js")))))
+
+        (it "compresses the asset"
+          (let [config @test-compressor-config
+                _ (prepare-asset config "test1.js")
+                asset (find-asset config "test1.js")]
+            (should= "var test = 1;\ncompressed" (:body asset))))
+
+        (it "only uses the compresses that matches the extension"
+          (let [config @test-compressor-config
+                _ (prepare-asset config "test2.fake")
+                asset (find-asset config "test2.fake")]
+            (should= "Some fake thing\n" (:body asset))))
+
+        (it "does not compress the asset when disabled"
+          (let [config (set-compression @test-compressor-config false)
+                _ (prepare-asset config "test1.js")
+                asset (find-asset config "test1.js")]
+            (should= "var test = 1;\n" (:body asset))))
+
+        (it "does not compress the asset when the pipeline is disabled"
+          (let [config (set-pipeline-enabled @test-compressor-config false)
+                _ (prepare-asset config "test1.js")
+                asset (find-asset config "test1.js")]
+            (should= "var test = 1;\n" (:body asset))))
+
         (it "a compiler with multiple extensions"
             (let [configured-compiler (add-compiler-config @config (configure-compiler
                                                                      (add-input-extension "fake")

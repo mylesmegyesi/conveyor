@@ -3,6 +3,8 @@
             [clojure.string :refer [replace-first] :as clj-str]
             [pantomime.mime :refer [mime-type-of]]
             [conveyor.file-utils :refer :all]
+            [conveyor.compile :refer [compile-asset]]
+            [conveyor.config :refer [compile?]]
             [conveyor.manfiest :refer [manifest-path]]
             [conveyor.finder.interface :refer [get-asset get-logical-path get-digest-path]]
             [conveyor.finder.factory :refer [make-asset-finder]]))
@@ -33,16 +35,68 @@
         found
         (f config (remove-extension asset-path) output-extension)))))
 
+(defn identity-pipeline-fn [config path extension asset]
+  asset)
+
+(defn- build-pipeline-fns [config]
+  (if (:pipeline-enabled config)
+    [(if (compile? config)
+       compile-asset
+       identity-pipeline-fn)]
+    []))
+
+(defn- build-pipeline-fn [config]
+  (let [pipeline-fns (build-pipeline-fns config)]
+    (fn [path extension asset]
+      (reduce
+        (fn [asset f]
+          (f config path extension asset))
+        asset
+        pipeline-fns))))
+
+(declare ^:dynamic *pipeline*)
+
+(defn build-pipeline [config]
+  {:finder (build-asset-finder config)
+   :pipeline-fn (build-pipeline-fn config)})
+
+(defn pipeline []
+  *pipeline*)
+
+(defn- do-get [config path extension]
+  (let [{:keys [finder pipeline-fn]} (pipeline)]
+    (when-let [asset (get-asset finder path extension)]
+      (pipeline-fn path extension asset))))
+
+(defn- normalize-paths [asset]
+  (if (:extension asset)
+    (-> asset
+      (assoc :logical-path (add-extension
+                             (:logical-path asset)
+                             (:extension asset)))
+      (assoc :digest-path (add-extension
+                            (:digest-path asset)
+                            (:extension asset))))
+    asset))
+
+(defmacro with-pipeline [config & body]
+  `(if (bound? #'*pipeline*)
+     ~@body
+     (binding [*pipeline* (build-pipeline ~config)]
+       ~@body)))
+
 (defn find-asset
   ([config asset-path]
-    (call-fn-for-path find-asset config asset-path))
+    (with-pipeline config
+      (call-fn-for-path find-asset config asset-path)))
   ([config asset-path extension]
-    (let [[digest path] (remove-asset-digest asset-path extension)
-          asset (get-asset (build-asset-finder config) path extension)]
-    (if digest
-      (when (= digest (:digest asset))
-        asset)
-      asset))))
+    (with-pipeline config
+      (let [[digest path] (remove-asset-digest asset-path extension)]
+        (when-let [asset (do-get config path extension)]
+          (if digest
+            (when (= digest (:digest asset))
+              (normalize-paths asset))
+            (normalize-paths asset)))))))
 
 (defn- throw-asset-not-found [path]
   (throw (Exception. (format "Asset not found: %s" path))))
@@ -62,9 +116,10 @@
     (file-join "/" (:prefix config) path)))
 
 (defn- get-path [config path extension]
-  (if (:use-digest-path config)
-    (build-path config (get-digest-path (build-asset-finder config) path extension))
-    (build-path config (get-logical-path (build-asset-finder config) path extension))))
+  (let [{:keys [finder]} (pipeline)]
+    (if (:use-digest-path config)
+      (build-path config (get-digest-path finder path extension))
+      (build-path config (get-logical-path finder path extension)))))
 
 (defn- get-path! [config path extension]
   (if-let [path (get-path config path extension)]
@@ -73,13 +128,15 @@
 
 (defn asset-path
   ([config path]
-    (if-let [found (call-fn-for-path get-path config path)]
-      found
-      (throw-asset-not-found path)))
+    (with-pipeline config
+      (if-let [found (call-fn-for-path get-path config path)]
+        found
+        (throw-asset-not-found path))))
   ([config path extension]
-    (if-let [found (get-path config path extension)]
-      found
-      (throw-asset-not-found path))))
+    (with-pipeline config
+      (if-let [found (get-path config path extension)]
+        found
+        (throw-asset-not-found path)))))
 
 (defn- build-url [{:keys [asset-host] :as config} path]
   (when path
@@ -87,9 +144,11 @@
 
 (defn asset-url
   ([config path]
-    (build-url config (asset-path config path)))
+    (with-pipeline config
+      (build-url config (asset-path config path))))
   ([config path extension]
-    (build-url config (asset-path config path extension))))
+    (with-pipeline config
+      (build-url config (asset-path config path extension)))))
 
 (defn- write-asset-path [config asset path]
   (let [file-name (file-join (:output-dir config) path)]
@@ -134,14 +193,17 @@
   (get-config [this] @this))
 
 (defn wrap-asset-pipeline [handler -config]
-  (fn [{:keys [uri] :as request}]
-    (let [{:keys [prefix] :as config} (get-config -config)]
-      (if (.startsWith uri prefix)
-        (if-let [{:keys [body logical-path]} (find-asset config (remove-prefix uri prefix))]
-          {:status 200
-           :headers {"Content-Length" (str (count body))
-                     "Content-Type" (mime-type-of logical-path)}
-           :body body}
-          (handler request))
-        (handler request)))))
+  (let [config (get-config -config)
+        pipe (build-pipeline config)]
+    (fn [{:keys [uri] :as request}]
+      (let [{:keys [prefix]} config]
+        (if (.startsWith uri prefix)
+          (binding [*pipeline* pipe]
+            (if-let [{:keys [body logical-path]} (find-asset config (remove-prefix uri prefix))]
+              {:status 200
+               :headers {"Content-Length" (str (count body))
+                         "Content-Type" (mime-type-of logical-path)}
+               :body body}
+              (handler request)))
+            (handler request))))))
 

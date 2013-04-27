@@ -2,18 +2,19 @@
   (:require [clojure.java.io :refer [file]]
             [clojure.string :refer [join replace-first] :as clj-str]
             [digest :refer [md5]]
+            [conveyor.config :refer [compile?]]
             [conveyor.compile :refer [compile-asset]]
-            [conveyor.context :refer :all]
             [conveyor.file-utils :refer :all]
             [conveyor.finder.interface :refer [AssetFinder]]))
 
-(defn- build-asset [logical-file-path output-extension asset-body]
+(defn- build-asset [logical-file-path output-extension requested-extension asset-body]
   (let [digest (md5 asset-body)
+        extension (or output-extension requested-extension)
         file-name (remove-extension logical-file-path)]
     {:body asset-body
-     :logical-path (add-extension file-name output-extension)
+     :logical-path (add-extension file-name extension)
      :digest digest
-     :digest-path (add-extension (str file-name "-" digest) output-extension)}))
+     :digest-path (add-extension (str file-name "-" digest) extension)}))
 
 (defn- format-asset-path [asset-path]
   (format "\"%s\"" asset-path))
@@ -75,17 +76,20 @@
             (extensions-from-compiler compiler)))
         compilers))))
 
-(defn- build-possible-files [context]
-  (let [asset-path (get-requested-path context)
-        requested-extension (get-requested-extension context)
-        extensions (compiler-extensions (:compilers (get-config context)) requested-extension)]
+(defn- compilers [config]
+  (if (compile? config)
+    (:compilers config)
+    []))
+
+(defn- build-possible-files [config path extension]
+  (let [extensions (compiler-extensions (compilers config) extension)]
     (distinct
       (-> []
-        (requested-file asset-path requested-extension)
-        (files-with-compiler-extensions asset-path extensions requested-extension)
-        (index-file asset-path extensions requested-extension)))))
+        (requested-file path extension)
+        (files-with-compiler-extensions path extensions extension)
+        (index-file path extensions extension)))))
 
-(defn- build-possible-input-files [context]
+(defn- build-possible-input-files [load-paths]
   (reduce
     (fn [files load-path]
       (reduce
@@ -96,7 +100,7 @@
         files
         (list-files load-path)))
     []
-    (:load-paths (get-config context))))
+    load-paths))
 
 (defn- match-files [input-files potential-files]
   (distinct
@@ -112,62 +116,42 @@
       []
       potential-files)))
 
-(defn- find-file [context]
-  (let [input-files (build-possible-input-files context)
-        files-to-read (build-possible-files context)
+(defn- find-file [config path extension]
+  (let [input-files (build-possible-input-files (:load-paths config))
+        files-to-read (build-possible-files config path extension)
         matching-files (match-files input-files files-to-read)
         num-found-assets (count matching-files)]
     (cond
       (> num-found-assets 1)
-      (throw-multiple-found-exception
-        (get-requested-path context)
-        (map :absolute-path matching-files))
+      (throw-multiple-found-exception path (map :absolute-path matching-files))
       (= num-found-assets 1)
-      (first matching-files))))
-
-(defn- read-asset [context on-asset-read]
-  (if-let [file (find-file context)]
-    (let [{:keys [absolute-path logical-path]} file
-          body (read-file absolute-path)]
-      (on-asset-read
-        (-> context
-          (set-asset-body body)
-          (set-found-path absolute-path)
-          (set-base-path logical-path)
-          (set-found-extension (get-extension absolute-path)))))))
-
-(defn- serve-asset [context]
-  (read-asset
-    context
-    (fn [context]
-      (-> context
-        compile-asset
-        (as-> result-context
-              (build-asset
-                (get-base-path result-context)
-                (get-asset-extension result-context)
-                (get-asset-body result-context)))))))
-
-(defn- make-context [config path extension]
-  (make-serve-context
-    (set-config config)
-    (set-requested-path path)
-    (set-requested-extension extension)))
+      (let [{:keys [logical-path absolute-path]} (first matching-files)]
+        {:absolute-path absolute-path
+         :extension (get-extension logical-path)
+         :logical-path (remove-extension logical-path)}))))
 
 (defn find-asset [config path extension]
-  (serve-asset (make-context config path extension)))
+  (if-let [file (find-file config path extension)]
+    (let [{:keys [logical-path absolute-path]} file
+          body (read-file absolute-path)
+          digest (md5 body)]
+      (-> file
+        (assoc :body body)
+        (assoc :digest digest)
+        (assoc :digest-path (str logical-path "-" digest))))))
 
 (deftype DynamicAssetFinder [config]
   AssetFinder
+
   (get-asset [this path extension]
-    (serve-asset (make-context config path extension)))
+    (find-asset config path extension))
 
   (get-logical-path [this path extension]
-    (when-let [file (find-file (make-context config path extension))]
-      (replace-extension (:logical-path file) extension)))
+    (when-let [file (find-file config path extension)]
+      (add-extension (:logical-path file) extension)))
 
   (get-digest-path [this path extension]
-    (:digest-path (find-asset config path extension)))
+    (add-extension (:digest-path (find-asset config path extension)) extension))
 
   )
 

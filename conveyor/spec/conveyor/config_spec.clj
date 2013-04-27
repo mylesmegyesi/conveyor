@@ -133,6 +133,30 @@
       (let [config (configure-asset-pipeline {})]
         (should= false (:compress config))))
 
+    (it "sets compile to true"
+      (let [config (configure-asset-pipeline {:compile true})]
+        (should= true (:compile config))))
+
+    (it "sets compile to false"
+      (let [config (configure-asset-pipeline {:compile false})]
+        (should= false (:compile config))))
+
+    (it "defaults compile to true"
+      (let [config (configure-asset-pipeline {})]
+        (should= true (:compile config))))
+
+    (it "sets pipeline-enabled to true"
+      (let [config (configure-asset-pipeline {:pipeline-enabled true})]
+        (should= true (:pipeline-enabled config))))
+
+    (it "sets pipeline-enabled to true"
+      (let [config (configure-asset-pipeline {:pipeline-enabled false})]
+        (should= false (:pipeline-enabled config))))
+
+    (it "defaults pipeline-enabled to true"
+      (let [config (configure-asset-pipeline {})]
+        (should= true (:pipeline-enabled config))))
+
     )
 
   )

@@ -153,6 +153,27 @@
             (should= "/test3.fake-output" (asset-path @test-compiler-config "test3.fake-output"))
             (should= "/test3.fake-output" (asset-path @test-compiler-config "test3" "fake-output"))))
 
+        (it "does not find assets using compiler extensions when compile is disabled"
+          (let [config (set-compile @test-compiler-config false)
+                _ (prepare-asset config "test3.fake1")
+                asset (find-asset config "test3.fake1")]
+            (should-be-nil (find-asset config "test3.fake-output"))
+            (should= "Some fake thing1\n" (:body asset))
+            (should= "test3.fake1" (:logical-path asset))
+            (should= "/test3.fake1" (asset-path config "test3.fake1"))
+            (should= "/test3.fake1" (asset-path config "test3" "fake1"))))
+
+        (it "does not find assets using compiler extensions when the pipeline is disabled"
+          (let [config (set-pipeline-enabled @test-compiler-config false)
+                _ (prepare-asset config "test3.fake1")
+                asset (find-asset config "test3.fake1")]
+            (prepare-asset config "test1.js")
+            (should-be-nil (find-asset config "test3.fake-output"))
+            (should= "Some fake thing1\n" (:body asset))
+            (should= "test3.fake1" (:logical-path asset))
+            (should= "/test3.fake1" (asset-path config "test3.fake1"))
+            (should= "/test3.fake1" (asset-path config "test3" "fake1"))))
+
         (it "a compiler with multiple extensions"
             (let [configured-compiler (add-compiler-config @config (configure-compiler
                                                                      (add-input-extension "fake")

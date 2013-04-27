@@ -2,6 +2,9 @@
   (:require [clojure.java.io :refer [resource file]]
             [clojure.string :refer [split]]))
 
+(defn compile? [config]
+  (and (:pipeline-enabled config) (:compile config)))
+
 (defn- base-dir [full-path sub-path]
   (first (split full-path (re-pattern sub-path) 2)))
 
@@ -85,13 +88,21 @@
 (defn set-compression [config compression]
   (assoc config :compress compression))
 
+(defn set-compile [config compile]
+  (assoc config :compile compile))
+
+(defn set-pipeline-enabled [config enabled]
+  (assoc config :pipeline-enabled enabled))
+
 (def default-pipeline-config
   {:load-paths []
    :compilers []
    :prefix "/"
    :output-dir "public"
    :search-strategy :dynamic
-   :compress false})
+   :compress false
+   :compile true
+   :pipeline-enabled true})
 
 (defmacro thread-pipeline-config [& body]
   `(-> default-pipeline-config
@@ -151,6 +162,12 @@
 (defn- configure-compression [config {:keys [compress]}]
   (set-compression config (if (nil? compress) (:compress config) compress)))
 
+(defn- configure-compile [config {:keys [compile]}]
+  (set-compile config (if (nil? compile) (:compile config) compile)))
+
+(defn- configure-pipeline [config {:keys [pipeline-enabled]}]
+  (set-pipeline-enabled config (if (nil? pipeline-enabled) (:pipeline-enabled config) pipeline-enabled)))
+
 (defn configure-asset-pipeline [config]
   (thread-pipeline-config
     (configure-load-paths config)
@@ -161,5 +178,7 @@
     (configure-output-dir config)
     (configure-manifest config)
     (configure-search-strategy config)
-    (configure-compression config)))
+    (configure-compression config)
+    (configure-compile config)
+    (configure-pipeline config)))
 

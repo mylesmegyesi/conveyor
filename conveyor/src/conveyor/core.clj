@@ -16,15 +16,13 @@
      [path ""]
      [(remove-extension path) output-extension]]))
 
-(defn- first-not-nil [m]
-  (first (filter (complement nil?) m)))
-
 (defn- call-fn-for-path [f config asset-path]
-  (first-not-nil
-    (map
-      (fn [[path extension]]
-        (f config path extension))
-      (path-and-extention-variations asset-path))))
+  (loop [variations (path-and-extention-variations asset-path)]
+    (when (not (zero? (count variations)))
+      (let [[path extension] (first variations)]
+        (if-let [found (f config path extension)]
+          found
+          (recur (rest variations)))))))
 
 (defn identity-pipeline-fn [config path extension asset]
   asset)
@@ -150,16 +148,16 @@
     (with-pipeline config
       (build-url config (asset-path config path extension)))))
 
-(defn- write-asset-path [config asset path]
+(defn- write-asset-path [config body path]
   (let [file-name (file-join (:output-dir config) path)]
     (ensure-directory-of-file file-name)
-    (write-file file-name (:body asset))
-    (write-gzipped-file file-name (:body asset))))
+    (write-file file-name body)
+    (write-gzipped-file file-name body)))
 
 (defn- write-assets [config assets]
-  (doseq [asset assets]
-    (write-asset-path config asset (build-path config (:logical-path asset)))
-    (write-asset-path config asset (build-path config (:digest-path asset)))))
+  (doseq [{:keys [body logical-path digest-path]} assets]
+    (write-asset-path config body (build-path config logical-path))
+    (write-asset-path config body (build-path config digest-path))))
 
 (defn- build-manifest [config assets]
   (reduce
@@ -178,7 +176,7 @@
     (spit manifest (build-manifest config assets))))
 
 (defn precompile [config paths]
-  (let [assets (map #(find-asset! config %) paths)]
+  (let [assets (doall (map #(find-asset! config %) paths))]
     (write-assets config assets)
     (write-manifest config assets)))
 

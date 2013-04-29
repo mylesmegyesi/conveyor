@@ -1,4 +1,4 @@
-(defproject conveyor-sass "0.1.7"
+(defproject conveyor-sass "0.1.8"
   :description "Sass plugin for conveyor"
   :url "https://github.com/mylesmegyesi/conveyor"
   :license {:name "Eclipse Public License"
@@ -15,5 +15,9 @@
                    :test-paths ["spec"]}}
 
   :resource-paths ["gems"]
+
+  :scm {:name "git"
+        :url "https://github.com/mylesmegyesi/conveyor"
+        :dir "conveyor-sass"}
 
   )

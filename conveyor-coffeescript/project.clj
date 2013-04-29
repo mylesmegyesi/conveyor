@@ -1,4 +1,4 @@
-(defproject conveyor-coffeescript "0.1.7"
+(defproject conveyor-coffeescript "0.1.8"
   :description "Coffeescript plugin for conveyor"
   :url "https://github.com/mylesmegyesi/conveyor"
   :license {:name "Eclipse Public License"
@@ -12,4 +12,8 @@
                    :main speclj.main
                    :plugins [[speclj "2.5.0"]]
                    :test-paths ["spec"]}}
+
+  :scm {:name "git"
+        :url "https://github.com/mylesmegyesi/conveyor"
+        :dir "conveyor-coffeescript"}
   )

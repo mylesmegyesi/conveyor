@@ -1,4 +1,4 @@
-(defproject conveyor "0.1.7"
+(defproject conveyor "0.1.8"
   :description "An implementation of the Rails asset pipeline for Clojure"
   :url "https://github.com/mylesmegyesi/conveyor"
   :license {:name "Eclipse Public License"
@@ -15,4 +15,8 @@
                    :resource-paths ["test_fixtures/resources"]
                    :plugins [[speclj "2.5.0"]]
                    :test-paths ["spec"]}}
+
+  :scm {:name "git"
+        :url "https://github.com/mylesmegyesi/conveyor"
+        :dir "conveyor"}
   )

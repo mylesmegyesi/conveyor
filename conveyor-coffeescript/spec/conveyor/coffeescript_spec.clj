@@ -3,7 +3,7 @@
             [conveyor.config :refer :all]
             [conveyor.core :refer [find-asset]]
             [conveyor.coffeescript :refer :all])
-  (:import [speclj SpecFailure]))
+  (:import [java.lang AssertionError]))
 
 (describe "conveyor.coffeescript"
 
@@ -31,7 +31,7 @@
   (it "reports sytax errors"
     (try
       (find-asset @config "syntax_error.js")
-      (throw (SpecFailure. "I didn't throw"))
+      (throw (AssertionError. "I didn't throw"))
       (catch Exception e
         (should-contain "syntax_error.coffee: missing )" (.getMessage e)))))
 

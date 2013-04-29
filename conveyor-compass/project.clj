@@ -9,10 +9,10 @@
                  [conveyor "0.1.7"]
                  [zweikopf "0.1.0"]]
 
-  :profiles {:dev {:dependencies [[speclj "2.5.0"]
+  :profiles {:dev {:dependencies [[speclj "2.6.0"]
                                   [conveyor-sass "0.1.7"]]
                    :main speclj.main
-                   :plugins [[speclj "2.5.0"]]
+                   :plugins [[speclj "2.6.0"]]
                    :test-paths ["spec"]}}
 
   :resource-paths ["gems"]

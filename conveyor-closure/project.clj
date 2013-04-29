@@ -8,9 +8,9 @@
                  [conveyor "0.1.7"]
                  [com.google.javascript/closure-compiler "r2388"]]
 
-  :profiles {:dev {:dependencies [[speclj "2.5.0"]]
+  :profiles {:dev {:dependencies [[speclj "2.6.0"]]
                    :main speclj.main
-                   :plugins [[speclj "2.5.0"]]
+                   :plugins [[speclj "2.6.0"]]
                    :test-paths ["spec"]}}
 
   :scm {:name "git"

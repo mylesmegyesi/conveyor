@@ -134,8 +134,9 @@
             (should= "/test3.fake-output" (asset-path @fake1-compiler-config "test3.fake-output"))
             (should= "/test3.fake-output" (asset-path @fake1-compiler-config "test3" "fake-output"))))
 
-        (defn test-compiler [config body filename input-extension output-extension]
-          (str body "compiled with " filename ":" input-extension ":" output-extension))
+        (defn test-compiler [config asset input-extension output-extension]
+          (let [body (str (:body asset) "compiled with " (:absolute-path asset) ":" input-extension ":" output-extension)]
+            (assoc asset :body body)))
 
         (with test-compiler-config (add-compiler-config
                                      @config

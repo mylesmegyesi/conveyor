@@ -13,14 +13,15 @@
   (ruby-require (resource-path "jrclj-1.0.1/lib/jrclj.rb"))
   (ruby-require (resource-path "conveyor_sass/sass_functions.rb")))
 
-(defn- compile-sass [config body file-path input-extension output-extension]
+(defn- compile-sass [config {:keys [absolute-path body] :as asset} input-extension output-extension]
   (binding [*current-config* config]
-    (render-string body
-                   :load-paths (:load-paths config)
-                   :syntax (keyword input-extension)
-                   :style (if (:compress config) :compressed :expanded)
-                   :filename file-path
-                   :trace-selectors true)))
+    (assoc asset :body
+           (render-string body
+                          :load-paths (:load-paths config)
+                          :syntax (keyword input-extension)
+                          :style (if (:compress config) :compressed :expanded)
+                          :filename absolute-path
+                          :trace-selectors true))))
 
 (defn configure-sass [config]
   (init-conveyor-sass)

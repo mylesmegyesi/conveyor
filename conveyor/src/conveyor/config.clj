@@ -38,7 +38,7 @@
 (def default-compiler-config
   {:input-extensions []
    :output-extensions []
-   :compiler (fn [config body file-path input-extension output-extension] body)})
+   :compiler (fn [config asset input-extension output-extension] asset)})
 
 (defmacro configure-compiler [& body]
   `(-> default-compiler-config

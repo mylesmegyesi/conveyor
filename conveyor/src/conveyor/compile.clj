@@ -20,14 +20,8 @@
              (some #(= % output-extension) (:output-extensions compiler)))))
     compilers))
 
-(defn- do-compile [config found-extension asset compiler-fn output-extension]
-  (-> asset
-    (assoc :body (compiler-fn
-                   config
-                   (:body asset)
-                   (:absolute-path asset)
-                   found-extension
-                   output-extension))
+(defn- do-compile [config asset compiler-fn found-extension output-extension]
+  (-> (compiler-fn config asset found-extension output-extension)
     (assoc :extension output-extension)))
 
 (defn compile-asset [config path extension asset]
@@ -42,10 +36,10 @@
       (= num-compilers 1)
       (if (empty? extension)
         (if (= 1 (count output-extensions))
-          (do-compile config found-extension asset (:compiler compiler) (first output-extensions))
+          (do-compile config asset (:compiler compiler) found-extension (first output-extensions))
           (throw-multiple-output-exensions-with-no-requested-output-extension
             path (:absolute-path asset) output-extensions))
-        (do-compile config found-extension asset (:compiler compiler) extension))
+        (do-compile config asset (:compiler compiler) found-extension extension))
       :else
       asset)))
 

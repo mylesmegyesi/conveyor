@@ -33,7 +33,7 @@
       (find-asset @config "syntax_error.js")
       (throw (AssertionError. "I didn't throw"))
       (catch Exception e
-        (should-contain "syntax_error.coffee: missing )" (.getMessage e)))))
+        (should-contain "syntax_error.coffee: SyntaxError: missing )" (.getMessage e)))))
 
   )
 

@@ -1,24 +1,22 @@
-(defproject conveyor-compass "0.1.9"
-  :description "Compass plugin for Conveyor"
+(defproject conveyor-jst "0.1.9"
+  :description "JST template plugin for conveyor"
   :url "https://github.com/mylesmegyesi/conveyor"
   :license {:name "Eclipse Public License"
-            :url "http://www.eclipse.org/legal/epl-v10.html"}
+            :url "http://www.eclipse.org/legal/epl-v10.html"
+            :distribution :repo
+            :comments "same as Clojure"}
 
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [sass "3.2.6"]
                  [conveyor "0.1.9"]
-                 [zweikopf "0.1.0"]]
+                 [cheshire "5.1.1"]]
 
-  :profiles {:dev {:dependencies [[speclj "2.6.1"]
-                                  [conveyor-sass "0.1.9"]]
+  :profiles {:dev {:dependencies [[speclj "2.6.1"]]
                    :main speclj.main
                    :plugins [[speclj "2.6.1"]]
                    :test-paths ["spec"]}}
 
-  :resource-paths ["gems"]
-
   :scm {:name "git"
         :url "https://github.com/mylesmegyesi/conveyor"
-        :dir "conveyor-compass"}
+        :dir "conveyor-jst"}
 
   )

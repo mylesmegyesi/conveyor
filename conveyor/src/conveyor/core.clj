@@ -6,7 +6,7 @@
             [conveyor.compile :refer [compile-asset]]
             [conveyor.compress :refer [compress-asset]]
             [conveyor.config :refer [compile? compress?]]
-            [conveyor.manfiest :refer [manifest-path]]
+            [conveyor.manifest :refer [manifest-path]]
             [conveyor.finder.interface :refer [get-asset get-logical-path get-digest-path]]
             [conveyor.finder.factory :refer [make-asset-finder]]))
 

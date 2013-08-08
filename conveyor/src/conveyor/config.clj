@@ -102,8 +102,8 @@
 (defn set-asset-host [config host]
   (assoc config :asset-host (normalize-asset-host host)))
 
-(defn set-manifest [config manfiest-path]
-  (assoc config :manifest manfiest-path))
+(defn set-manifest [config manifest-path]
+  (assoc config :manifest manifest-path))
 
 (defn set-compression [config compression]
   (assoc config :compress compression))

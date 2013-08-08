@@ -1,7 +1,7 @@
 (ns conveyor.finder.static
   (:require [conveyor.file-utils :refer [get-extension replace-extension add-extension read-file file-join]]
             [conveyor.finder.interface :refer [AssetFinder]]
-            [conveyor.manfiest :refer [read-manifest manifest-path]]))
+            [conveyor.manifest :refer [read-manifest manifest-path]]))
 
 (defn- throw-not-precompiled [config path]
   (throw
@@ -38,4 +38,3 @@
 
 (defn make-static-asset-finder [config]
   (StaticAssetFinder. config))
-

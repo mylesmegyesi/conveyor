@@ -62,4 +62,3 @@
       (add-input-extension "coffee")
       (add-output-extension "js")
       (set-compiler compile-coffeescript))))
-

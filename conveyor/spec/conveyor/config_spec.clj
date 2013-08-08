@@ -114,8 +114,8 @@
         (should= "public" (:output-dir config))))
 
     (it "configures the manifest"
-      (let [config (configure-asset-pipeline {:manifest "some-other-manfiest.edn"})]
-        (should= "some-other-manfiest.edn" (:manifest config))))
+      (let [config (configure-asset-pipeline {:manifest "some-other-manifest.edn"})]
+        (should= "some-other-manifest.edn" (:manifest config))))
 
     (it "configures the search strategy"
       (let [config (configure-asset-pipeline {:search-strategy :static})]

@@ -1,4 +1,4 @@
-(ns conveyor.manfiest
+(ns conveyor.manifest
   (:require [clojure.edn :refer [read-string] :rename {read-string read-edn}]
             [conveyor.file-utils :refer [file-join]]))
 

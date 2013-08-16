@@ -24,8 +24,7 @@
     (let [config (get-config -config)
           {:keys [prefix]} config]
       (if (.startsWith uri prefix)
-        (with-pipeline-config
-          config
+        (with-pipeline-config config
           (if-let [{:keys [body logical-path]} (find-asset (remove-prefix uri prefix))]
             {:status 200
              :headers {"Content-Length" (str (count body))

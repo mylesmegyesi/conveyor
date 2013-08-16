@@ -1,5 +1,6 @@
 (ns conveyor.compile
-  (:require [clojure.string :refer [join]]))
+  (:require [clojure.string :refer [join]]
+            [conveyor.file-utils :refer [get-extension]]))
 
 (defn- throw-multiple-output-exensions-with-no-requested-output-extension [requested-path found-path output-extensions]
   (throw (Exception. (format "Search for \"%s\" found \"%s\". However, you did not request an output extension and the matched compiler has multiple output extensions: %s"
@@ -24,8 +25,9 @@
   (-> (compiler-fn config asset found-extension output-extension)
     (assoc :extension output-extension)))
 
-(defn compile-asset [config path extension asset]
-  (let [found-extension (:extension asset)
+(defn compile-asset [config path asset]
+  (let [extension (get-extension path)
+        found-extension (:extension asset)
         compilers (compilers-for-extension (:compilers config) found-extension extension)
         num-compilers (count compilers)
         compiler (first compilers)

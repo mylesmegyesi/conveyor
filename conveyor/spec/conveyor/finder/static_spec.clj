@@ -17,7 +17,7 @@
 
   (it "finds an asset that has a dot in the name"
     (with-pipeline-config @config
-      (let [found-asset (find-asset "jquery.ui.autocomplete" "js")]
+      (let [found-asset (find-asset "jquery.ui.autocomplete.js")]
         (should= "jquery.ui.autocomplete.js" (:logical-path found-asset)))))
 
   (it "finds an asset in the output directory with a prefix"

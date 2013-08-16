@@ -36,11 +36,6 @@
           (let [found-asset (find-asset "test1.js")]
             (should= "var test = 1;\n" (:body found-asset))))
 
-        (it "finds an asset and returns the body with a requested output extension"
-          (prepare-asset "test1.js")
-          (let [found-asset (find-asset "test1" "js")]
-            (should= "var test = 1;\n" (:body found-asset))))
-
         (it "returns the logical path"
           (prepare-asset "test1.js")
           (let [asset (find-asset "test1.js")]
@@ -89,6 +84,7 @@
                                        (add-input-extension "fake")
                                        (add-output-extension "fake-output"))))
 
+
         (it "finds assets using the output extensions given by compilers"
           (with-pipeline-config @fake-compiler-config
             (prepare-asset "test2.fake-output")
@@ -101,20 +97,18 @@
         (it "finds assets using the output extensions given by compilers if the file name has many dots"
           (with-pipeline-config @fake-compiler-config
             (prepare-asset "test.2.fake-output")
-            (let [asset (find-asset "test.2" "fake-output")]
+            (let [asset (find-asset "test.2.fake-output")]
               (should= "Some fake thing with dots\n" (:body asset))
               (should= "test.2.fake-output" (:logical-path asset))
-              (should= "/test.2.fake-output" (asset-url "test.2" "fake-output"))
               (should= "/test.2.fake-output" (asset-url "test.2.fake-output"))
               (should= "test.2-e2cb442c231d4d2420a64a834c86324c.fake-output" (:digest-path asset)))))
 
         (it "finds assets using the input extensions given by compilers if the file name has many dots"
           (with-pipeline-config @fake-compiler-config
             (prepare-asset "test.2.fake")
-            (let [asset (find-asset "test.2" "fake")]
+            (let [asset (find-asset "test.2.fake")]
               (should= "Some fake thing with dots\n" (:body asset))
               (should= "test.2.fake" (:logical-path asset))
-              (should= "/test.2.fake" (asset-url "test.2" "fake"))
               (should= "/test.2.fake" (asset-url "test.2.fake"))
               (should= "test.2-e2cb442c231d4d2420a64a834c86324c.fake" (:digest-path asset)))))
 
@@ -136,8 +130,7 @@
             (let [asset (find-asset "test3.fake-output")]
               (should= "Some fake thing1\n" (:body asset))
               (should= "test3.fake-output" (:logical-path asset))
-              (should= "/test3.fake-output" (asset-url "test3.fake-output"))
-              (should= "/test3.fake-output" (asset-url "test3" "fake-output")))))
+              (should= "/test3.fake-output" (asset-url "test3.fake-output")))))
 
         (defn test-compiler [config asset input-extension output-extension]
           (let [body (str (:body asset) "compiled with " (:absolute-path asset) ":" input-extension ":" output-extension)]
@@ -157,8 +150,7 @@
                   asset (find-asset "test3.fake-output")]
               (should= (format "Some fake thing1\ncompiled with %s:fake1:fake-output" (str base-path "/test3.fake1")) (:body asset))
               (should= "test3.fake-output" (:logical-path asset))
-              (should= "/test3.fake-output" (asset-url "test3.fake-output"))
-              (should= "/test3.fake-output" (asset-url "test3" "fake-output")))))
+              (should= "/test3.fake-output" (asset-url "test3.fake-output")))))
 
         (it "does not find assets using compiler extensions when compile is disabled"
           (with-pipeline-config (set-compile @test-compiler-config false)
@@ -167,8 +159,7 @@
               (should-be-nil (find-asset "test3.fake-output"))
               (should= "Some fake thing1\n" (:body asset))
               (should= "test3.fake1" (:logical-path asset))
-              (should= "/test3.fake1" (asset-url "test3.fake1"))
-              (should= "/test3.fake1" (asset-url "test3" "fake1")))))
+              (should= "/test3.fake1" (asset-url "test3.fake1")))))
 
         (it "does not find assets using compiler extensions when the pipeline is disabled"
           (with-pipeline-config (set-pipeline-enabled @test-compiler-config false)
@@ -178,8 +169,7 @@
               (should-be-nil (find-asset "test3.fake-output"))
               (should= "Some fake thing1\n" (:body asset))
               (should= "test3.fake1" (:logical-path asset))
-              (should= "/test3.fake1" (asset-url "test3.fake1"))
-              (should= "/test3.fake1" (asset-url "test3" "fake1")))))
+              (should= "/test3.fake1" (asset-url "test3.fake1")))))
 
         (defn test-compressor [config body filename]
           (str body "compressed"))
@@ -240,11 +230,9 @@
               (should= "Multiple outputs\n" (:body html-asset))
               (should= "multiple_outputs.html" (:logical-path html-asset))
               (should= "/multiple_outputs.html" (asset-url "multiple_outputs.html"))
-              (should= "/multiple_outputs.html" (asset-url "multiple_outputs" "html"))
               (should= "Multiple outputs\n" (:body txt-asset))
               (should= "multiple_outputs.txt" (:logical-path txt-asset))
-              (should= "/multiple_outputs.txt" (asset-url "multiple_outputs.txt"))
-              (should= "/multiple_outputs.txt" (asset-url "multiple_outputs" "txt")))))
+              (should= "/multiple_outputs.txt" (asset-url "multiple_outputs.txt")))))
 
         (with markdown-html-config (configure-compiler
                                      (add-input-extension "markdown")
@@ -264,11 +252,9 @@
             (should= "Multiple outputs\n" (:body html-asset))
             (should= "multiple_outputs.html" (:logical-path html-asset))
             (should= "/multiple_outputs.html" (asset-url "multiple_outputs.html"))
-            (should= "/multiple_outputs.html" (asset-url "multiple_outputs" "html"))
             (should= "Multiple outputs\n" (:body txt-asset))
             (should= "multiple_outputs.txt" (:logical-path txt-asset))
-            (should= "/multiple_outputs.txt" (asset-url "multiple_outputs.txt"))
-            (should= "/multiple_outputs.txt" (asset-url "multiple_outputs" "txt")))))
+            (should= "/multiple_outputs.txt" (asset-url "multiple_outputs.txt")))))
 
         (it "finds an asset using the digest path"
           (with-pipeline-config @markdown-config
@@ -287,14 +273,15 @@
                                       (add-input-extension "coffee")
                                       (add-output-extension "js"))))
 
+        (context "index"
+          (tags :index)
         (it "finds an index file"
           (with-pipeline-config @coffeescript-config
             (prepare-asset "test6.js")
             (let [asset (find-asset "test6.js")]
               (should= "var index = 1;\n" (:body asset))
               (should= "test6.js" (:logical-path asset))
-              (should= "/test6.js" (asset-url "test6.js"))
-              (should= "/test6.js" (asset-url "test6" "js")))))
+              (should= "/test6.js" (asset-url "test6.js")))))
 
         (it "finds an index file with dots in the directory name"
           (with-pipeline-config @coffeescript-config
@@ -302,7 +289,6 @@
             (let [asset (find-asset "test.6.js")]
               (should= "var index6 = 1;\n" (:body asset))
               (should= "test.6.js" (:logical-path asset))
-              (should= "/test.6.js" (asset-url "test.6" "js"))
               (should= "/test.6.js" (asset-url "test.6.js")))))
 
         (it "finds an index file with a matching output extension"
@@ -311,8 +297,7 @@
             (let [asset (find-asset "test7.js")]
               (should= "var test7 = 1;\n" (:body asset))
               (should= "test7.js" (:logical-path asset))
-              (should= "/test7.js" (asset-url "test7.js"))
-              (should= "/test7.js" (asset-url "test7" "js")))))
+              (should= "/test7.js" (asset-url "test7.js"))))))
 
         ))
 
@@ -355,10 +340,6 @@
               "Asset not found: unknown.js"
               (asset-url "unknown.js")))
 
-          (it "returns the logical path with an given output extension"
-            (prepare-asset "test1.js")
-            (should= "/test1.js" (asset-url "test1" "js")))
-
           (with coffeescript-config (add-compiler-config
                                       (pipeline-config)
                                       (configure-compiler
@@ -368,7 +349,7 @@
           (it "returns the logical path of an asset with dots in the name"
             (with-pipeline-config @coffeescript-config
               (prepare-asset "test.6.js")
-              (should= "/test.6.js" (asset-url "test.6" "js"))))
+              (should= "/test.6.js" (asset-url "test.6.js"))))
 
           (it "appends the prefix"
             (with-pipeline-config (add-prefix (pipeline-config) "/assets")
@@ -409,16 +390,12 @@
               (prepare-asset "test1.js")
               (should= "/test1.js" (asset-url "test1.js"))))
 
-          (it "returns the logical path with an given output extension"
-            (prepare-asset "test1.js")
-            (should= "http://cloudfront.net/test1.js" (asset-url "test1" "js")))
-
           (it "appends the prefix"
             (with-pipeline-config (add-prefix (pipeline-config) "/assets")
               (prepare-asset "test1.js")
               (should= "http://cloudfront.net/assets/test1.js" (asset-url "test1.js"))))
 
-          (it "removes trailing '/' from host"
+          (it "builds the url correctly when the asset host contains a trailing slash"
             (with-pipeline-config (set-asset-host (pipeline-config) "http://cloudfront.net/")
               (prepare-asset "test1.js")
               (should= "http://cloudfront.net/test1.js" (asset-url "test1.js"))))

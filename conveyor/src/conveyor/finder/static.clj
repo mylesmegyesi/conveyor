@@ -13,26 +13,24 @@
 (defn- read-file-in-output [{:keys [output-dir]} file-path]
   (read-file (file-join output-dir file-path)))
 
-(defn- get-from-manifest [config path extension]
-  (let [manifest (read-manifest config)
-        possible-paths [(replace-extension path extension)
-                        (add-extension path extension)]]
-    (some #(get manifest %) possible-paths)))
+(defn- get-from-manifest [config path]
+  (let [manifest (read-manifest config)]
+    (get manifest path)))
 
-(defn find-asset [config path extension]
-  (when-let [asset (get-from-manifest config path extension)]
+(defn find-asset [config path]
+  (when-let [asset (get-from-manifest config path)]
     (assoc asset :body (read-file-in-output config (:logical-path asset)))))
 
 (deftype StaticAssetFinder [config]
   AssetFinder
-  (get-asset [this path extension]
-    (find-asset config path extension))
+  (get-asset [this path]
+    (find-asset config path))
 
-  (get-logical-path [this path extension]
-    (:logical-path (get-from-manifest config path extension)))
+  (get-logical-path [this path]
+    (:logical-path (get-from-manifest config path)))
 
-  (get-digest-path [this path extension]
-    (:digest-path (get-from-manifest config path extension)))
+  (get-digest-path [this path]
+    (:digest-path (get-from-manifest config path)))
 
   )
 

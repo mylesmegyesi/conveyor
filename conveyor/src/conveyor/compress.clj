@@ -6,7 +6,7 @@
       #(= extension (:input-extension %))
       (:compressors config))))
 
-(defn compress-asset [config path extension asset]
+(defn compress-asset [config path asset]
   (let [asset-extension (:extension asset)]
     (if-let [compressor (compressor-for-extension config asset-extension)]
       (assoc asset :body ((:compressor compressor)

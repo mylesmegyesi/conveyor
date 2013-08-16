@@ -154,7 +154,7 @@
   (throw
     (Exception.
       (format
-        "Unknown type of load-path: :unknown-type. Valid types are :resource-directory and :directory."
+        "Unknown type of load-path: %s. Valid types are :resource-directory and :directory."
         type))))
 
 (defn- configure-load-paths [config {:keys [load-paths]}]

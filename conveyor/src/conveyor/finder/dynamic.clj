@@ -7,15 +7,6 @@
             [conveyor.file-utils :refer :all]
             [conveyor.finder.interface :refer [AssetFinder]]))
 
-(defn- build-asset [logical-file-path output-extension requested-extension asset-body]
-  (let [digest (md5 asset-body)
-        extension (or output-extension requested-extension)
-        file-name (remove-extension logical-file-path)]
-    {:body asset-body
-     :logical-path (add-extension file-name extension)
-     :digest digest
-     :digest-path (add-extension (str file-name "-" digest) extension)}))
-
 (defn- format-asset-path [asset-path]
   (format "\"%s\"" asset-path))
 

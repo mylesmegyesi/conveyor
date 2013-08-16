@@ -6,4 +6,3 @@
   (case search-strategy
     :dynamic (make-dynamic-asset-finder config)
     :static (make-static-asset-finder config)))
-

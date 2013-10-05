@@ -7,7 +7,6 @@
 
 (describe "conveyor.coffeescript"
 
-  (with base-dir (directory-path "test_fixtures/javascripts"))
   (with config (thread-pipeline-config
                  (configure-coffeescript)
                  (add-directory-to-load-path "test_fixtures/javascripts")))

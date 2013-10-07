@@ -11,7 +11,7 @@
 
   (context "find-asset"
 
-    (defn- it-finds-assets [search-strategy prepare-asset]
+    (defn- it-finds-assets [asset-finder prepare-asset]
       (list
 
         (def alphanumeric "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
@@ -23,7 +23,7 @@
         (around [it]
           (let [config (thread-pipeline-config
                          (set-output-dir (get-output-dir 15)) ; the manifest file get's cached once it is read, so write to a different output directory each test
-                         (set-search-strategy search-strategy)
+                         (set-asset-finder asset-finder)
                          (add-directory-to-load-path "test_fixtures/public/javascripts"))]
             (with-pipeline-config config
               (try
@@ -302,21 +302,21 @@
         ))
 
     (context "on the load path"
-      (it-finds-assets :dynamic (fn [_] )))
+      (it-finds-assets :load-path (fn [_] )))
 
     (context "in the output path"
-      (it-finds-assets :static #(with-pipeline-config
-                                  (set-search-strategy (pipeline-config) :dynamic)
-                                  (precompile (flatten [%])))))
+      (it-finds-assets :precompiled #(with-pipeline-config
+                                       (set-asset-finder (pipeline-config) :load-path)
+                                       (precompile (flatten [%])))))
     )
 
   (context "asset-url"
 
-    (defn- it-finds-the-asset-url [search-strategy prepare-asset]
+    (defn- it-finds-the-asset-url [asset-finder prepare-asset]
 
       (list
         (with config (thread-pipeline-config
-                       (set-search-strategy search-strategy)
+                       (set-asset-finder asset-finder)
                        (add-directory-to-load-path "test_fixtures/public/javascripts")))
         (around [it]
           (try
@@ -410,12 +410,12 @@
       )
 
     (context "on the load path"
-      (it-finds-the-asset-url :dynamic (fn [_] )))
+      (it-finds-the-asset-url :load-path (fn [_] )))
 
     (context "in the output path"
-      (it-finds-the-asset-url :static #(with-pipeline-config
-                                         (set-search-strategy (pipeline-config) :dynamic)
-                                         (precompile (flatten [%])))))
+      (it-finds-the-asset-url :precompiled #(with-pipeline-config
+                                              (set-asset-finder (pipeline-config) :load-path)
+                                              (precompile (flatten [%])))))
 
     )
 

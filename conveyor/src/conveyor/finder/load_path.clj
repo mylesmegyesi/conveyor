@@ -1,4 +1,4 @@
-(ns conveyor.finder.dynamic
+(ns conveyor.finder.load-path
   (:require [clojure.java.io :refer [file]]
             [clojure.string :refer [join replace-first] :as clj-str]
             [digest :refer [md5]]
@@ -130,7 +130,7 @@
                               (str (remove-extension logical-path) "-" digest)
                               (get-extension logical-path)))))))
 
-(deftype DynamicAssetFinder [config]
+(deftype LoadPathAssetFinder [config]
   AssetFinder
 
   (get-asset [this path]
@@ -145,6 +145,6 @@
 
   )
 
-(defn make-dynamic-asset-finder [config]
-  (DynamicAssetFinder. config))
+(defn make-load-path-asset-finder [config]
+  (LoadPathAssetFinder. config))
 

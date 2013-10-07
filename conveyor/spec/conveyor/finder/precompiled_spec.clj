@@ -1,12 +1,12 @@
-(ns conveyor.finder.static-spec
+(ns conveyor.finder.precompiled-spec
   (:require [speclj.core :refer :all]
             [conveyor.config :refer :all]
             [conveyor.core :refer [find-asset with-pipeline-config]]))
 
-(describe "conveyor.finder.static"
+(describe "conveyor.finder.precompiled"
 
   (with config (thread-pipeline-config
-                 (set-search-strategy :static)
+                 (set-asset-finder :precompiled)
                  (set-output-dir "test_fixtures/output")
                  (set-manifest "test_fixtures/output/manifest1.edn")))
 

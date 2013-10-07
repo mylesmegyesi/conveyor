@@ -118,12 +118,12 @@
         (should= "some-other-manifest.edn" (:manifest config))))
 
     (it "configures the search strategy"
-      (let [config (configure-asset-pipeline {:search-strategy :static})]
-        (should= :static (:search-strategy config))))
+      (let [config (configure-asset-pipeline {:asset-finder :precompiled})]
+        (should= :precompiled (:asset-finder config))))
 
-    (it "defaults the search strategy to dynamic"
+    (it "defaults the search strategy to load-path"
       (let [config (configure-asset-pipeline {})]
-        (should= :dynamic (:search-strategy config))))
+        (should= :load-path (:asset-finder config))))
 
     (it "sets compression to true"
       (let [config (configure-asset-pipeline {:compress true})]

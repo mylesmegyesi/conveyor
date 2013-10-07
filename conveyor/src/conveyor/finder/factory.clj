@@ -1,8 +1,9 @@
 (ns conveyor.finder.factory
-  (:require [conveyor.finder.dynamic :refer [make-dynamic-asset-finder]]
-            [conveyor.finder.static :refer [make-static-asset-finder]]))
+  (:require [conveyor.finder.load-path :refer [make-load-path-asset-finder]]
+            [conveyor.finder.precompiled :refer [make-precompiled-asset-finder]]))
 
-(defn make-asset-finder [{:keys [search-strategy] :as config}]
-  (case search-strategy
-    :dynamic (make-dynamic-asset-finder config)
-    :static (make-static-asset-finder config)))
+(defn make-asset-finder [{:keys [asset-finder] :as config}]
+  (case asset-finder
+    :load-path (make-load-path-asset-finder config)
+    :precompiled (make-precompiled-asset-finder config)
+    (throw (IllegalArgumentException. (str "Invalid asset-finder " asset-finder)))))

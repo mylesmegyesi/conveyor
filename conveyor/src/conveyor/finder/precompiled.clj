@@ -1,4 +1,4 @@
-(ns conveyor.finder.static
+(ns conveyor.finder.precompiled
   (:require [conveyor.file-utils :refer [get-extension replace-extension add-extension read-file file-join]]
             [conveyor.finder.interface :refer [AssetFinder]]
             [conveyor.manifest :refer [read-manifest manifest-path]]))
@@ -21,7 +21,7 @@
   (when-let [asset (get-from-manifest config path)]
     (assoc asset :body (read-file-in-output config (:logical-path asset)))))
 
-(deftype StaticAssetFinder [config]
+(deftype PrecompiledAssetFinder [config]
   AssetFinder
   (get-asset [this path]
     (find-asset config path))
@@ -34,5 +34,5 @@
 
   )
 
-(defn make-static-asset-finder [config]
-  (StaticAssetFinder. config))
+(defn make-precompiled-asset-finder [config]
+  (PrecompiledAssetFinder. config))

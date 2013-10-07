@@ -90,8 +90,8 @@
 (defn set-output-dir [config path]
   (assoc config :output-dir path))
 
-(defn set-search-strategy [config strat]
-  (assoc config :search-strategy strat))
+(defn set-asset-finder [config strat]
+  (assoc config :asset-finder strat))
 
 (defn- normalize-asset-host [host]
   (when host
@@ -120,7 +120,7 @@
    :compressors []
    :prefix "/"
    :output-dir "public"
-   :search-strategy :dynamic
+   :asset-finder :load-path
    :compress false
    :compile true
    :pipeline-enabled true})
@@ -182,8 +182,8 @@
 (defn- configure-manifest [config {:keys [manifest]}]
   (set-manifest config manifest))
 
-(defn- configure-search-strategy [config {:keys [search-strategy]}]
-  (set-search-strategy config (or search-strategy (:search-strategy config))))
+(defn- configure-asset-finder [config {:keys [asset-finder]}]
+  (set-asset-finder config (or asset-finder (:asset-finder config))))
 
 (defn- configure-compression [config {:keys [compress]}]
   (set-compression config (if (nil? compress) (:compress config) compress)))
@@ -203,7 +203,7 @@
     (configure-use-digest-path config)
     (configure-output-dir config)
     (configure-manifest config)
-    (configure-search-strategy config)
+    (configure-asset-finder config)
     (configure-compression config)
     (configure-compile config)
     (configure-pipeline config)))

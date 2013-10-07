@@ -1,4 +1,4 @@
-(ns conveyor.finder.dynamic-spec
+(ns conveyor.finder.load-path-spec
   (:require [speclj.core :refer :all]
             [conveyor.config :refer :all]
             [conveyor.core :refer [find-asset with-pipeline-config]]))
@@ -6,10 +6,10 @@
 (defn test-compiler [config body filename input-extension output-extension]
   (str body "compiled with " filename ":" input-extension ":" output-extension))
 
-(describe "conveyor.finder.dynamic"
+(describe "conveyor.finder.load-path"
 
   (with config (thread-pipeline-config
-                 (set-search-strategy :dynamic)
+                 (set-asset-finder :load-path)
                  (add-directory-to-load-path "test_fixtures/public/javascripts")))
 
   (with fake1-compiler-config (add-compiler-config

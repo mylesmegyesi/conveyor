@@ -5,8 +5,7 @@
             [conveyor.compress :refer [compress-asset]]
             [conveyor.config :refer [compile? compress?]]
             [conveyor.finder.interface :refer [get-asset get-logical-path get-digest-path]]
-            [conveyor.finder.factory :refer [make-asset-finder]])
-  (:import [java.net URL URLClassLoader MalformedURLException]))
+            [conveyor.finder.factory :refer [make-asset-finder]]))
 
 (declare ^:dynamic *pipeline*)
 (declare ^:dynamic *pipeline-config*)
@@ -71,27 +70,14 @@
     (when-let [asset (get-asset finder path)]
       (pipeline-fn path asset))))
 
-(defn- as-url [path]
-  (try
-    (URL. path)
-    (catch MalformedURLException e
-      (URL. (str "file:" path "/")))))
-
-(defn with-load-path [load-paths f]
-  (let [thread (Thread/currentThread)
-        current-loader (.getContextClassLoader thread)
-        urls (map as-url load-paths)
-        new-loader (URLClassLoader. (into-array java.net.URL urls) current-loader)
-        _ (.setContextClassLoader thread new-loader)
-        result (f)]
-    (.setContextClassLoader thread current-loader)
-    result))
+(defn bind-config [config pipeline f]
+  (binding [*pipeline-config* config
+            *pipeline* pipeline]
+    (f)))
 
 (defmacro with-pipeline-config [config & body]
   `(let [config# ~config]
-     (binding [*pipeline-config* config#
-               *pipeline* (build-pipeline config#)]
-       (with-load-path (:load-paths config#) (fn [] ~@body)))))
+     (bind-config config# (build-pipeline config#) (fn [] ~@body))))
 
 (defn- remove-asset-digest [path]
   (let [[match digest] (first (re-seq #"(?sm)-([0-9a-f]{7,40})\.[^.]+$" path))]

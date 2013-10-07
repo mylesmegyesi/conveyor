@@ -1,6 +1,6 @@
 (ns conveyor.middleware
   (:require [pantomime.mime :refer [mime-type-of]]
-            [conveyor.core :refer [with-pipeline-config find-asset]]
+            [conveyor.core :refer [bind-config build-pipeline find-asset]]
             [clojure.string :refer [replace-first] :as clj-str]))
 
 (defprotocol GetConfig
@@ -13,23 +13,36 @@
   clojure.lang.Delay
   (get-config [this] @this))
 
-(defn- remove-prefix [uri prefix]
-  (let [without-prefix (replace-first uri prefix "")]
-    (if (.startsWith without-prefix "/")
-      (replace-first without-prefix "/" "")
-      without-prefix)))
+(defn- build-asset-request?-fn [config]
+  (fn [uri] (.startsWith uri (:prefix (get-config config)))))
+
+(defn- build-prefix-remover-fn [config]
+  (fn [uri]
+    (let [prefix (:prefix (get-config config))
+          without-prefix (replace-first uri prefix "")]
+      (if (.startsWith without-prefix "/")
+        (replace-first without-prefix "/" "")
+        without-prefix))))
+
+(defn- asset-response-fn [config]
+  (let [remove-prefix (build-prefix-remover-fn config)]
+    (fn [uri]
+      (when-let [{:keys [body logical-path]} (find-asset (remove-prefix uri))]
+        {:status 200
+         :headers {"Content-Length" (str (count body))
+                   "Content-Type" (mime-type-of logical-path)}
+         :body body}))))
+
+(defn- build-serve-asset-fn [config]
+  (let [pipeline (delay (build-pipeline (get-config config)))
+        asset-request? (build-asset-request?-fn config)
+        build-asset-response (asset-response-fn config)]
+    (fn [uri]
+      (when (asset-request? uri)
+        (bind-config (get-config config) @pipeline (fn [] (build-asset-response uri)))))))
 
 (defn wrap-asset-pipeline [handler -config]
-  (fn [{:keys [uri] :as request}]
-    (let [config (get-config -config)
-          {:keys [prefix]} config]
-      (if (.startsWith uri prefix)
-        (with-pipeline-config config
-          (if-let [{:keys [body logical-path]} (find-asset (remove-prefix uri prefix))]
-            {:status 200
-             :headers {"Content-Length" (str (count body))
-                       "Content-Type" (mime-type-of logical-path)}
-             :body body}
-            (handler request)))
-        (handler request)))))
+  (let [serve-asset (build-serve-asset-fn -config)]
+    (fn [{:keys [uri] :as request}]
+      (or (serve-asset uri) (handler request)))))
 

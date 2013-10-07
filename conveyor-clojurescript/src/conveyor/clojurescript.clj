@@ -1,4 +1,4 @@
-(ns conveyor-clojurescript.core
+(ns conveyor.clojurescript
   (:require [conveyor.config :refer :all]
             [cljs.closure :refer [build]]))
 

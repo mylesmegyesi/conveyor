@@ -37,10 +37,8 @@
 
 (defmulti list-files #(if (jar-directory? %) :jar :file-system))
 
-(def ^:private list-files-on-system
-  (memoize
-    (fn [dir]
-      (map #(.getAbsolutePath %) (FileUtils/listFiles (file dir) nil true)))))
+(defn-  list-files-on-system [dir]
+  (map #(.getAbsolutePath %) (FileUtils/listFiles (file dir) nil true)))
 
 (defmethod list-files :file-system [dir]
   (list-files-on-system dir))

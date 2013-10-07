@@ -1,7 +1,7 @@
 (ns conveyor.sass-spec
   (:require [speclj.core :refer :all]
             [conveyor.config :refer :all]
-            [conveyor.core :refer [find-asset asset-path asset-url]]
+            [conveyor.core :refer [find-asset asset-url with-pipeline-config]]
             [conveyor.sass :refer :all]))
 
 (describe "conveyor.sass"
@@ -11,8 +11,11 @@
                  (configure-sass)
                  (add-directory-to-load-path "test_fixtures/stylesheets1")))
 
-  (with test4-path (asset-path @config "test4.png"))
-  (with test4-url (asset-url @config "test4.png"))
+  (with test4-url (asset-url "test4.png"))
+
+  (around [it]
+    (with-pipeline-config @config
+      (it)))
 
   (defn test1-debug-output []
     (format
@@ -69,28 +72,25 @@
 }
 "
       @stylesheets1
-      @test4-path
+      @test4-url
       @stylesheets1
       @test4-url))
 
   (it "compiles a scss file"
-    (let [found-asset (find-asset @config "test1.css")]
+    (let [found-asset (find-asset "test1.css")]
       (should (.contains (test1-debug-output) (:body found-asset)))))
 
   (it "compresses a scss file"
-    (let [found-asset (find-asset (set-compression @config true) "test1.css")]
-      (should (.contains (test1-compressed-output) (:body found-asset)))))
+    (with-pipeline-config (set-compression @config true)
+      (let [found-asset (find-asset "test1.css")]
+        (should (.contains (test1-compressed-output) (:body found-asset))))))
 
   (it "compiles a sass file"
-    (let [found-asset (find-asset @config "test2.css")]
+    (let [found-asset (find-asset "test2.css")]
       (should (.contains (test2-debug-output) (:body found-asset)))))
 
-  (it "compiles using the asset-path and asset-url sass function"
-    (let [found-asset (find-asset @config "test3.css")]
-      (should (.contains (test3-debug-output) (:body found-asset)))))
-
-  (it "compiles using the asset-path and asset-url sass function"
-    (let [found-asset (find-asset @config "test3.css")]
+  (it "compiles using the asset-url sass function"
+    (let [found-asset (find-asset "test3.css")]
       (should (.contains (test3-debug-output) (:body found-asset)))))
 
   )

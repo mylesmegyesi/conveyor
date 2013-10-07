@@ -1,12 +1,5 @@
 module Sass::Script::Functions
 
-  def asset_path(string)
-    assert_type string, :String
-    send_to_sass_helpers(:asset_path, string.value)
-  end
-
-  declare :asset_path, :args => [:string]
-
   def asset_url(string)
     assert_type string, :String
     send_to_sass_helpers(:asset_url, string.value)

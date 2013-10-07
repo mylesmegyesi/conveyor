@@ -12,6 +12,7 @@
   :profiles {:dev {:dependencies [[speclj "2.6.1"]
                                   [ring-mock "0.1.3"]]
                    :main speclj.main
+                   :aot [speclj.main]
                    :resource-paths ["test_fixtures/resources"]
                    :plugins [[speclj "2.6.1"]]
                    :test-paths ["spec"]}}

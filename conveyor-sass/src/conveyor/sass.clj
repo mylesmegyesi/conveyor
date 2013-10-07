@@ -2,7 +2,6 @@
   (:require [clojure.java.io :refer [resource]]
             [sass.core :refer [render-string]]
             [zweikopf.core :refer [ruby-require]]
-            [conveyor.sass.helpers :refer [*current-config*]]
             [conveyor.config :refer :all]))
 
 (defn- resource-path [path]
@@ -14,14 +13,13 @@
   (ruby-require (resource-path "conveyor_sass/sass_functions.rb")))
 
 (defn- compile-sass [config {:keys [absolute-path body] :as asset} input-extension output-extension]
-  (binding [*current-config* config]
-    (assoc asset :body
-           (render-string body
-                          :load-paths (:load-paths config)
-                          :syntax (keyword input-extension)
-                          :style (if (:compress config) :compressed :expanded)
-                          :filename absolute-path
-                          :trace-selectors true))))
+  (assoc asset :body
+         (render-string body
+                        :load-paths (:load-paths config)
+                        :syntax (keyword input-extension)
+                        :style (if (:compress config) :compressed :expanded)
+                        :filename absolute-path
+                        :trace-selectors true)))
 
 (defn configure-sass [config]
   (init-conveyor-sass)

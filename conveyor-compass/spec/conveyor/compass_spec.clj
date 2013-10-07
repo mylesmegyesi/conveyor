@@ -21,6 +21,10 @@
                  (configure-compass)
                  (add-directory-to-load-path "test_fixtures/stylesheets")))
 
+  (around [it]
+    (with-pipeline-config @config
+      (it)))
+
   (defn test-compass-output []
     (format
 "/* on line 3 of %s/test_compass.scss */
@@ -33,7 +37,7 @@
       @stylesheets))
 
   (it "it can use the compass border radius helper"
-    (let [found-asset (find-asset @config "test_compass.css")]
+    (let [found-asset (find-asset "test_compass.css")]
       (should= (test-compass-output) (:body found-asset))))
 
   (defn test-compass1-output []
@@ -64,7 +68,7 @@
       @stylesheets))
 
   (it "it can use the compass ellipsis helper"
-    (let [found-asset (find-asset @config "test_compass1.css")]
+    (let [found-asset (find-asset "test_compass1.css")]
       (should= (test-compass1-output) (:body found-asset))))
 
   (defn test-compass2-output []
@@ -103,7 +107,7 @@
       @stylesheets))
 
   (it "can use the blueprint button helper"
-    (let [found-asset (find-asset @config "test_compass2.css")]
+    (let [found-asset (find-asset "test_compass2.css")]
       (should= (test-compass2-output) (:body found-asset))))
 
   (defn test-compass3-output []
@@ -116,7 +120,7 @@
       @stylesheets))
 
   (it "can the blueprint templates"
-    (let [found-asset (find-asset @config "test_compass3.css")]
+    (let [found-asset (find-asset "test_compass3.css")]
       (should= (test-compass3-output) (:body found-asset))))
 
   )

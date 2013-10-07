@@ -60,7 +60,7 @@
 (defn- normalize-resource-url [url]
   (if (= "file" (.getProtocol url))
     (directory-path (.getPath url))
-    (str url)))
+    (str url "/")))
 
 (defn resource-directory-path [directory-path resource-in-directory]
   (let [with-leading-slash (str "/" resource-in-directory)

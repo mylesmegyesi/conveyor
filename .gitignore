@@ -14,3 +14,4 @@ conveyor/public
 conveyor/test_manifest_dir
 conveyor/output_fixtures
 *.sass-cache
+conveyor-clojurescript/out

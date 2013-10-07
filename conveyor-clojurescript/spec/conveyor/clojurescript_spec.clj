@@ -1,10 +1,10 @@
-(ns conveyor-clojurescript.core-spec
+(ns conveyor.clojurescript-spec
   (:require [speclj.core :refer :all]
             [conveyor.config :refer :all]
             [conveyor.core :refer :all]
-            [conveyor-clojurescript.core :refer :all]))
+            [conveyor.clojurescript :refer :all]))
 
-(describe "conveyor-clojurescript.core"
+(describe "conveyor.clojurescript"
 
   (with config (thread-pipeline-config
                  configure-coffeescript

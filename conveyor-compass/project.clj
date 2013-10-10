@@ -1,8 +1,8 @@
 (defproject conveyor-compass "0.2.1"
   :description "Compass plugin for Conveyor"
-  :url "https://github.com/mylesmegyesi/conveyor"
-  :license {:name "Eclipse Public License"
-            :url "http://www.eclipse.org/legal/epl-v10.html"}
+  :url         "https://github.com/mylesmegyesi/conveyor"
+  :license     {:name "Eclipse Public License"
+                :url "http://www.eclipse.org/legal/epl-v10.html"}
 
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [sass "3.2.6"]
@@ -14,7 +14,9 @@
                    :main speclj.main
                    :aot [speclj.main]
                    :plugins [[speclj "2.6.1"]]
-                   :test-paths ["spec"]}}
+                   :target-path  "target/"
+                   :test-paths ["spec"]
+                   :uberjar-name "conveyor-compass-standalone.jar"}}
 
   :resource-paths ["gems"]
 

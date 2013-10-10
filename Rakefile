@@ -16,7 +16,7 @@ end
 
 def jar_spec(dir)
   lein_task(dir, 'with-profile dev uberjar')
-  exec_in(dir, "java -jar target/#{dir}-0.2.1-standalone.jar")
+  exec_in(dir, "java -jar target/#{dir}-standalone.jar -c")
 end
 
 def spec(dir)

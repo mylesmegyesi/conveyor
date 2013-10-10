@@ -9,12 +9,12 @@
                  [org.apache.commons/commons-io "1.3.2"]
                  [com.novemberain/pantomime "1.7.0"]]
 
-  :profiles {:dev {:dependencies [[speclj "2.6.1"]
+  :profiles {:dev {:dependencies [[speclj "2.7.5"]
                                   [ring-mock "0.1.3"]]
                    :main speclj.main
                    :aot [speclj.main]
                    :resource-paths ["test_fixtures/resources"]
-                   :plugins [[speclj "2.6.1"]]
+                   :plugins [[speclj "2.7.5"]]
                    :test-paths ["spec"]}}
 
   :scm {:name "git"

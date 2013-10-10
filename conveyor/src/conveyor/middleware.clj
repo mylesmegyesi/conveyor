@@ -39,10 +39,22 @@
         build-asset-response (asset-response-fn config)]
     (fn [uri]
       (when (asset-request? uri)
-        (bind-config (get-config config) @pipeline (fn [] (build-asset-response uri)))))))
+        (build-asset-response uri)))))
 
-(defn wrap-asset-pipeline [handler -config]
-  (let [serve-asset (build-serve-asset-fn -config)]
+(defn- wrap-serve-asset [handler config]
+  (let [serve-asset (build-serve-asset-fn config)]
     (fn [{:keys [uri] :as request}]
       (or (serve-asset uri) (handler request)))))
 
+(defn- wrap-pipeline-config [handler config]
+  (let [pipeline (delay (build-pipeline (get-config config)))]
+    (fn [request]
+      (bind-config
+        (get-config config)
+        @pipeline
+        (fn [] (handler request))))))
+
+(defn wrap-asset-pipeline [handler -config]
+  (-> handler
+    (wrap-serve-asset -config)
+    (wrap-pipeline-config -config)))

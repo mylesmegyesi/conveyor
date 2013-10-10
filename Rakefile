@@ -27,6 +27,10 @@ def _install(dir)
   lein_task(dir, 'install')
 end
 
+def deploy(dir)
+  lein_task(dir, 'deploy clojars')
+end
+
 def ci?
   ENV['CI'] == '1'
 end
@@ -78,6 +82,11 @@ def package(name, dependencies)
   task :checkouts do
     checkouts(name, dependencies)
   end
+
+  desc "Deploy #{name}"
+  task :deploy do
+    deploy(name)
+  end
 end
 
 namespace :conveyor do
@@ -125,6 +134,9 @@ create_task_for_all(:clean)
 
 desc 'Install all conveyor projects'
 create_task_for_all(:install)
+
+desc 'Deploy all conveyor projects'
+create_task_for_all(:deploy)
 
 task :default => :spec
 

@@ -2,7 +2,7 @@
   (:require [speclj.core :refer :all]
             [ring.mock.request :as mr]
             [conveyor.config :refer :all]
-            [conveyor.core :refer [find-asset with-pipeline-config]]
+            [conveyor.core :refer [find-asset with-pipeline-config *pipeline*]]
             [conveyor.middleware :refer :all]
             ))
 
@@ -18,13 +18,9 @@
                  (add-directory-to-load-path "test_fixtures/public/images")
                  (add-directory-to-load-path "test_fixtures/public/stylesheets")))
 
-  (around [it]
-    (with-pipeline-config @config
-      (it)))
-
   (it "responds with the body of a javascript file when found"
     (let [handler (wrap-asset-pipeline (fn [_] :not-found) @config)
-          expected-asset (find-asset "test1.js")]
+          expected-asset (with-pipeline-config @config (find-asset "test1.js"))]
       (should=
         {:status 200
          :headers {"Content-Length" (str (count (:body expected-asset)))
@@ -44,7 +40,7 @@
 
   (it "serves assets with prefix"
     (let [handler (wrap-asset-pipeline (fn [_] :not-found) (add-prefix @config "/assets"))
-          expected-asset (find-asset "test1.js")]
+          expected-asset (with-pipeline-config @config (find-asset "test1.js"))]
       (should=
         {:status 200
          :headers {"Content-Length" (str (count (:body expected-asset)))
@@ -54,7 +50,7 @@
 
   (it "detects the content type of a css file"
     (let [handler (wrap-asset-pipeline (fn [_] :not-found) @config)
-          expected-asset (find-asset "test2.css")]
+          expected-asset (with-pipeline-config @config (find-asset "test2.css"))]
       (should=
         {:status 200
          :headers {"Content-Length" (str (count (:body expected-asset)))
@@ -64,7 +60,7 @@
 
   (it "reads a png file"
     (let [handler (wrap-asset-pipeline (fn [_] :not-found) @config)
-          expected-asset (find-asset "joodo.png")]
+          expected-asset (with-pipeline-config @config (find-asset "joodo.png"))]
       (should=
         {:status 200
          :headers {"Content-Length" "6533"
@@ -89,4 +85,9 @@
       (should=
         :next-handler-called
         (handler (mr/request :get "/unknown.js")))))
+
+  (it "binds the *pipeline* when it calls the next handler"
+    (let [handler (wrap-asset-pipeline (fn [_] (should (bound? #'*pipeline*))) @config)]
+      (handler (mr/request :get "/unknown.js"))))
+
   )

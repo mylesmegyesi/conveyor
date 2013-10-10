@@ -46,7 +46,7 @@
     (fn [{:keys [uri] :as request}]
       (or (serve-asset uri) (handler request)))))
 
-(defn- wrap-pipeline-config [handler config]
+(defn wrap-pipeline-config [handler config]
   (let [pipeline (delay (build-pipeline (get-config config)))]
     (fn [request]
       (bind-config

@@ -16,7 +16,7 @@ end
 
 def jar_spec(dir)
   lein_task(dir, 'with-profile dev uberjar')
-  exec_in(dir, "java -jar target/#{dir}-0.2.0-standalone.jar")
+  exec_in(dir, "java -jar target/#{dir}-0.2.1-standalone.jar")
 end
 
 def spec(dir)
@@ -43,16 +43,6 @@ def lein_task(dir, task)
   exec_in(dir, "#{lein_bin} #{task}")
 end
 
-def checkouts(client, servers)
-  Dir.mkdir "#{client}/checkouts" unless File.exists?("#{client}/checkouts")
-  servers.each do |server|
-    ln_path = "#{client}/checkouts/#{server}"
-    if !(File.exists?(ln_path))
-      sh "ln -s #{File.expand_path(File.dirname(__FILE__))}/#{server} #{client}/checkouts/#{server}"
-    end
-  end
-end
-
 def package(name, dependencies)
   desc "Clean #{name}"
   task :clean do
@@ -61,7 +51,6 @@ def package(name, dependencies)
 
   desc "Gather dependencies for #{name}"
   task :deps do
-    checkouts(name, dependencies) unless ci?
     dependencies.each do |dep|
       _install(dep)
     end
@@ -76,11 +65,6 @@ def package(name, dependencies)
   task :spec => [:clean, :deps] do
     spec(name)
     jar_spec(name)
-  end
-
-  desc "Setup checkouts for #{name}"
-  task :checkouts do
-    checkouts(name, dependencies)
   end
 
   desc "Deploy #{name}"
@@ -122,9 +106,6 @@ PROJECTS = %w(conveyor conveyor-sass conveyor-compass conveyor-coffeescript conv
 def create_task_for_all(task_name)
   task task_name => PROJECTS.map {|project| "#{project}:#{task_name}"}
 end
-
-desc 'Setup checkouts for subprojects'
-create_task_for_all(:checkouts)
 
 desc 'Run the specs for conveyor'
 create_task_for_all(:spec)

@@ -15,7 +15,8 @@
                    :plugins      [[speclj "2.6.1"]]
                    :target-path  "target/"
                    :test-paths   ["spec"]
-                   :uberjar-name "conveyor-clojurescript-standalone.jar"}}
+                   :uberjar-name "conveyor-clojurescript-standalone.jar"}
+             :deploy {}}
 
   :scm {:name "git"
         :url "https://github.com/mylesmegyesi/conveyor"

@@ -16,7 +16,8 @@
                    :plugins [[speclj "2.6.1"]]
                    :target-path  "target/"
                    :test-paths ["spec"]
-                   :uberjar-name "conveyor-compass-standalone.jar"}}
+                   :uberjar-name "conveyor-compass-standalone.jar"}
+             :deploy {}}
 
   :resource-paths ["gems"]
 

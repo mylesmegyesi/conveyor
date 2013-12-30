@@ -14,7 +14,8 @@
                    :plugins      [[speclj "2.6.1"]]
                    :target-path  "target/"
                    :test-paths   ["spec"]
-                   :uberjar-name "conveyor-closure-standalone.jar"}}
+                   :uberjar-name "conveyor-closure-standalone.jar"}
+             :deploy {}}
 
   :scm {:name "git"
         :url "https://github.com/mylesmegyesi/conveyor"

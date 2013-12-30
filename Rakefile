@@ -28,7 +28,11 @@ def _install(dir)
 end
 
 def deploy(dir)
-  lein_task(dir, 'deploy clojars')
+  lein_task(dir, 'with-profile deploy deploy clojars')
+end
+
+def jar(dir)
+  lein_task(dir, 'with-profile deploy jar')
 end
 
 def ci?
@@ -68,8 +72,13 @@ def package(name, dependencies)
   end
 
   desc "Deploy #{name}"
-  task :deploy do
+  task :deploy => :clean do
     deploy(name)
+  end
+
+  desc "Jar #{name}"
+  task :jar => :clean do
+    jar(name)
   end
 end
 
@@ -118,6 +127,9 @@ create_task_for_all(:install)
 
 desc 'Deploy all conveyor projects'
 create_task_for_all(:deploy)
+
+desc 'Jar all conveyor projects'
+create_task_for_all(:jar)
 
 task :default => :spec
 

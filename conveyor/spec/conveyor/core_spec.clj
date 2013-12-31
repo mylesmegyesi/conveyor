@@ -49,6 +49,12 @@
             (should= "200368af90cc4c6f4f1ddf36f97a279e" (:digest asset))
             (should= "test1-200368af90cc4c6f4f1ddf36f97a279e.js" (:digest-path asset))))
 
+        (it "maintains an iefix suffix"
+            (prepare-asset "test1.js")
+            (let [asset (find-asset "test1.js?#iefix")]
+              (should= "200368af90cc4c6f4f1ddf36f97a279e" (:digest asset))
+              (should= "test1-200368af90cc4c6f4f1ddf36f97a279e.js?#iefix" (:digest-path asset))))
+
         (it "finds an asset with multiple load paths"
           (with-pipeline-config (add-directory-to-load-path (pipeline-config) "test_fixtures/public/stylesheets")
             (prepare-asset "test2.css")
@@ -93,6 +99,15 @@
               (should= "test2.fake-output" (:logical-path asset))
               (should= "/test2.fake-output" (asset-url "test2.fake-output"))
               (should= "test2-979d812cfd0a7dc744af9e083a63ff10.fake-output" (:digest-path asset)))))
+
+        (it "maintains file extension suffix"
+          (with-pipeline-config @fake-compiler-config
+            (prepare-asset "test2.fake-output")
+            (let [asset (find-asset "test2.fake-output?#wat")]
+              (should= "Some fake thing\n" (:body asset))
+              (should= "test2.fake-output?#wat" (:logical-path asset))
+              (should= "/test2.fake-output?#wat" (asset-url "test2.fake-output?#wat"))
+              (should= "test2-979d812cfd0a7dc744af9e083a63ff10.fake-output?#wat" (:digest-path asset)))))
 
         (it "finds assets using the output extensions given by compilers if the file name has many dots"
           (with-pipeline-config @fake-compiler-config

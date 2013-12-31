@@ -85,13 +85,31 @@
       [digest (clj-str/replace path (str "-" digest) "")]
       [nil path])))
 
-(defn find-asset [path]
+(defn add-asset-suffix [asset suffix]
+  (-> (update-in asset [:digest-path] #(str % suffix))
+      (update-in [:logical-path] #(str % suffix))))
+
+(defn wrap-suffix [handler]
+  (fn [path]
+    (let [suffix (re-find #"\?#.*" path)
+          path (clj-str/replace path #"\?#.*" "")
+          asset (handler path)]
+      (when asset
+        (if (map? asset)
+          (add-asset-suffix asset suffix)
+          (str asset suffix))))))
+
+(defn -find-asset [path]
   (let [[digest path] (remove-asset-digest path)]
     (when-let [asset (do-get path)]
       (if digest
         (when (= digest (:digest asset))
           asset)
         asset))))
+
+(def find-asset
+  (-> -find-asset
+      wrap-suffix))
 
 (defmacro throw-unless-found [path & body]
   `(if-let [asset# ~@body]
@@ -114,5 +132,9 @@
 (defn- build-url [path]
   ((:url-builder (pipeline)) path))
 
-(defn asset-url [path]
+(defn -asset-url [path]
   (build-url (asset-path path)))
+
+(def asset-url
+  (-> -asset-url
+      wrap-suffix))

@@ -1,10 +1,8 @@
 (ns conveyor.middleware-spec
   (:require [speclj.core :refer :all]
             [ring.mock.request :as mr]
-            [conveyor.config :refer :all]
-            [conveyor.core :refer [find-asset with-pipeline-config *pipeline*]]
-            [conveyor.middleware :refer :all]
-            ))
+            [conveyor.core :refer :all]
+            [conveyor.middleware :refer :all]))
 
 (describe "conveyor.middleware"
   (with delayed-config

@@ -1,5 +1,5 @@
 (ns conveyor.closure
-  (:require [conveyor.config :refer [configure-compressor set-compressor set-input-extension add-compressor-config]])
+  (:require [conveyor.core :refer [configure-compressor set-compressor set-input-extension add-compressor-config]])
   (:import  [com.google.javascript.jscomp.Compiler]
            [com.google.javascript.jscomp CompilerOptions CompilationLevel JSSourceFile CheckLevel]))
 

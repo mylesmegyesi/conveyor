@@ -2,8 +2,7 @@
   (:require [speclj.core :refer :all]
             [clojure.java.io :refer [file input-stream copy]]
             [clojure.edn :refer [read-string] :rename {read-string read-edn}]
-            [conveyor.config :refer :all]
-            [conveyor.core :refer [with-pipeline-config pipeline-config]]
+            [conveyor.core :refer :all]
             [conveyor.precompile :refer :all]
             [conveyor.file-utils :refer [read-file read-stream]])
   (:import [org.apache.commons.io FileUtils]

@@ -6,7 +6,7 @@
 
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [digest "1.4.3"]
-                 [org.apache.commons/commons-io "1.3.2"]
+                 [commons-io "2.4"]
                  [com.novemberain/pantomime "1.7.0"]]
 
   :profiles {:dev {:dependencies   [[speclj "2.6.1"]

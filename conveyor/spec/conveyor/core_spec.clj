@@ -167,25 +167,6 @@
               (should= "test3.fake-output" (:logical-path asset))
               (should= "/test3.fake-output" (asset-url "test3.fake-output")))))
 
-        (it "does not find assets using compiler extensions when compile is disabled"
-          (with-pipeline-config (set-compile @test-compiler-config false)
-            (prepare-asset "test3.fake1")
-            (let [asset (find-asset "test3.fake1")]
-              (should-be-nil (find-asset "test3.fake-output"))
-              (should= "Some fake thing1\n" (:body asset))
-              (should= "test3.fake1" (:logical-path asset))
-              (should= "/test3.fake1" (asset-url "test3.fake1")))))
-
-        (it "does not find assets using compiler extensions when the pipeline is disabled"
-          (with-pipeline-config (set-pipeline-enabled @test-compiler-config false)
-            (prepare-asset "test3.fake1")
-            (let [asset (find-asset "test3.fake1")]
-              (prepare-asset "test1.js")
-              (should-be-nil (find-asset "test3.fake-output"))
-              (should= "Some fake thing1\n" (:body asset))
-              (should= "test3.fake1" (:logical-path asset))
-              (should= "/test3.fake1" (asset-url "test3.fake1")))))
-
         (defn test-compressor [config body filename]
           (str body "compressed"))
 

@@ -2,7 +2,6 @@
   (:require [clojure.java.io :refer [file]]
             [clojure.string :refer [join replace-first] :as clj-str]
             [digest :refer [md5]]
-            [conveyor.config :refer [compile?]]
             [conveyor.compile :refer [compile-asset]]
             [conveyor.file-utils :refer :all]
             [conveyor.finder.interface :refer [AssetFinder]]))
@@ -64,9 +63,7 @@
         compilers))))
 
 (defn- compilers [config]
-  (if (compile? config)
-    (:compilers config)
-    []))
+  (:compilers config))
 
 (defn- build-possible-files [config path requested-extension]
   (let [extensions (compiler-extensions (compilers config) requested-extension)]

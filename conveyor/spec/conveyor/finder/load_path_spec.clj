@@ -81,4 +81,38 @@
                             (str base-path "/test8.js")
                             (str base-path "/test8/index.js"))
           (find-asset "test8")))))
+
+  (context "config includes compilers"
+
+    (it "finds assets using compiler extensions when compile is disabled"
+      (with-pipeline-config (set-compile @fake1-compiler-config false)
+        (let [asset (find-asset "test3.fake1")]
+          (should (find-asset "test3.fake-output"))
+          (should= "Some fake thing1\n" (:body asset))
+          (should= "test3.fake1" (:logical-path asset)))))
+
+    (it "finds assets using compiler extensions when the pipeline is disabled"
+      (with-pipeline-config (set-pipeline-enabled @fake1-compiler-config false)
+        (let [asset (find-asset "test3.fake1")]
+          (should (find-asset "test3.fake-output"))
+          (should= "Some fake thing1\n" (:body asset))
+          (should= "test3.fake1" (:logical-path asset)))))
+  )
+
+  (context "config does not include compilers"
+
+    (it "does not find assets using compiler extensions when compile is disabled"
+      (with-pipeline-config (set-compile @config false)
+        (let [asset (find-asset "test3.fake1")]
+          (should-be-nil (find-asset "test3.fake-output"))
+          (should= "Some fake thing1\n" (:body asset))
+          (should= "test3.fake1" (:logical-path asset)))))
+
+    (it "does not find assets using compiler extensions when the pipeline is disabled"
+      (with-pipeline-config (set-pipeline-enabled @config false)
+        (let [asset (find-asset "test3.fake1")]
+          (should-be-nil (find-asset "test3.fake-output"))
+          (should= "Some fake thing1\n" (:body asset))
+          (should= "test3.fake1" (:logical-path asset)))))
+    )
   )

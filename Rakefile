@@ -102,15 +102,11 @@ namespace 'conveyor-closure' do
   package('conveyor-closure', %w{conveyor})
 end
 
-namespace 'conveyor-jst' do
-  package('conveyor-jst', %w{conveyor})
-end
-
 namespace 'conveyor-clojurescript' do
   package('conveyor-clojurescript', %w{conveyor})
 end
 
-PROJECTS = %w(conveyor conveyor-sass conveyor-compass conveyor-coffeescript conveyor-closure conveyor-jst conveyor-clojurescript)
+PROJECTS = %w(conveyor conveyor-sass conveyor-compass conveyor-coffeescript conveyor-closure conveyor-clojurescript)
 
 def create_task_for_all(task_name)
   task task_name => PROJECTS.map {|project| "#{project}:#{task_name}"}

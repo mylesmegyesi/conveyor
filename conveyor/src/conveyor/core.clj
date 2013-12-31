@@ -70,10 +70,10 @@
     (when-let [asset (get-asset finder path)]
       (pipeline-fn path asset))))
 
-(defn bind-config [config pipeline f]
-  (binding [*pipeline-config* config
-            *pipeline* pipeline]
-    (f)))
+(defmacro bind-config [config pipeline & body]
+  `(binding [*pipeline-config* ~config
+            *pipeline* ~pipeline]
+    ~body))
 
 (defmacro with-pipeline-config [config & body]
   `(let [config# ~config]

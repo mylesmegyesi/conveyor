@@ -1,6 +1,7 @@
 (ns conveyor.coffeescript
   (:require [clojure.java.io :refer [reader resource]]
-            [conveyor.core :refer :all]
+            [conveyor.config :refer :all]
+            [cheshire.core :refer [generate-string]])
   (:import [org.mozilla.javascript ContextFactory JavaScriptException]))
 
 (defn- make-context []

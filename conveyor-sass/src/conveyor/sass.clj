@@ -2,7 +2,7 @@
   (:require [clojure.java.io :refer [resource]]
             [sass.core :refer [render-string]]
             [zweikopf.core :refer [ruby-require]]
-            [conveyor.core :refer :all]))
+            [conveyor.config :refer :all]))
 
 (defn- resource-path [path]
   (.getPath (resource path)))

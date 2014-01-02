@@ -1,6 +1,7 @@
 (ns conveyor.clojurescript-spec
   (:require [speclj.core :refer :all]
             [conveyor.core :refer :all]
+            [conveyor.config :refer [add-directory-to-load-path]]
             [conveyor.clojurescript :refer :all]))
 
 (describe "conveyor.clojurescript"

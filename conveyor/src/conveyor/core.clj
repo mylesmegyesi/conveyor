@@ -89,12 +89,14 @@
 
 (defn- configure-load-paths [{:keys [load-paths] :as config}]
   (reduce
-    (fn [config {:keys [type path file-in-dir]}]
+    (fn [config {:keys [type path file-in-dir] :as load-path}]
       (cond
         (= :resource-directory type)
         (add-resource-directory-to-load-path config path file-in-dir)
         (= :directory type)
         (add-directory-to-load-path config path)
+        (not (map? load-path))
+        (add-to-load-path config load-path)
         :else
         (throw-unknown-load-path-type type)))
     (assoc config :load-paths [])
@@ -132,9 +134,9 @@
 
 (defn initialize-config [config]
   (-> config
-      apply-defaults
       configure-load-paths
-      configure-plugins))
+      configure-plugins
+      apply-defaults))
 
 (defmacro bind-config [config pipeline & body]
   `(binding [*pipeline-config* ~config
@@ -142,7 +144,7 @@
     ~body))
 
 (defmacro with-pipeline-config [config & body]
-  `(let [config# ~config]
+  `(let [config# (initialize-config ~config)]
      (bind-config config# (build-pipeline config#) (fn [] ~@body))))
 
 (defn- remove-asset-digest [path]

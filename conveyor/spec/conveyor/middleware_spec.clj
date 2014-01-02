@@ -2,7 +2,7 @@
   (:require [speclj.core :refer :all]
             [ring.mock.request :as mr]
             [conveyor.core :refer :all]
-            [conveyor.config :refer [add-directory-to-load-path add-resource-directory-to-load-path add-prefix]]
+            [conveyor.config :refer [thread-pipeline-config add-prefix set-asset-finder]]
             [conveyor.middleware :refer :all]))
 
 (describe "conveyor.middleware"

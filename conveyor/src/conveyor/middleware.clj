@@ -1,6 +1,6 @@
 (ns conveyor.middleware
   (:require [pantomime.mime :refer [mime-type-of]]
-            [conveyor.core :refer [bind-config build-pipeline find-asset]]
+            [conveyor.core :refer [bind-config build-pipeline find-asset initialize-config]]
             [clojure.string :refer [replace-first] :as clj-str]))
 
 (defprotocol GetConfig
@@ -8,10 +8,10 @@
 
 (extend-protocol GetConfig
   java.lang.Object
-  (get-config [this] this)
+  (get-config [this] (initialize-config this))
 
   clojure.lang.Delay
-  (get-config [this] @this))
+  (get-config [this] (initialize-config @this)))
 
 (defn- build-asset-request?-fn [config]
   (fn [uri] (.startsWith uri (:prefix (get-config config)))))

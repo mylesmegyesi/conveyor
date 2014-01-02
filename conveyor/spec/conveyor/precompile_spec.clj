@@ -3,6 +3,7 @@
             [clojure.java.io :refer [file input-stream copy]]
             [clojure.edn :refer [read-string] :rename {read-string read-edn}]
             [conveyor.core :refer :all]
+            [conveyor.config :refer [add-directory-to-load-path set-output-dir add-prefix set-manifest]]
             [conveyor.precompile :refer :all]
             [conveyor.file-utils :refer [read-file read-stream]])
   (:import [org.apache.commons.io FileUtils]

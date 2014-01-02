@@ -1,66 +1,13 @@
 (ns conveyor.core-spec
   (:require [speclj.core :refer :all]
             [clojure.java.io :refer [file]]
-            [ring.mock.request :as mr]
             [conveyor.core :refer :all]
-            [conveyor.precompile :refer [precompile]])
+            [conveyor.config :refer :all]
+            [conveyor.precompile :refer [precompile]]
+            [ring.mock.request :as mr])
   (:import [org.apache.commons.io FileUtils]))
 
-(describe "conveyor.config"
-
-  (it "initializes the config"
-    (should (initialize-config {})))
-
-  (context "resource-directory-path"
-
-    (it "builds the full path to a jar resource directory"
-      (let [full-path (resource-directory-path "stylesheets" "test1.css")]
-        (should= ".test1 { color: white; }\n" (slurp (str full-path "/test1.css")))))
-
-    (it "returns nil when the directory does not exist"
-      (should-be-nil (resource-directory-path "non_existant_dir" "test1.css")))
-
-    (it "returns nil when given resources does not exist"
-      (should-be-nil (resource-directory-path "stylesheets" "unknown")))
-
-    )
-
-  (context "directory-path"
-
-    (it "builds the full path to a directory"
-      (let [full-path (directory-path "test_fixtures/public/stylesheets")]
-        (should= ".test2 { color: black; }\n" (slurp (str full-path "/test2.css")))))
-
-    (it "returns nil when the directory does not exist"
-      (should-be-nil (directory-path "non_existant_dir")))
-
-    )
-
-  (context "add resource directory to load path"
-
-    (it "adds valid resource directory to the load path"
-      (let [full-path (resource-directory-path "stylesheets" "test1.css")
-            new-config (add-resource-directory-to-load-path {:load-paths []} "stylesheets" "test1.css")]
-        (should= [full-path] (:load-paths new-config))))
-
-    (it "throws an exception when the resource directory does not exist"
-      (should-throw IllegalArgumentException "Could not find resource directory: uknown-dir"
-                    (add-resource-directory-to-load-path {:load-paths []} "uknown-dir" "test1.css")))
-
-    )
-
-  (context "add directory to load path"
-
-    (it "adds valid directory to the load path"
-      (let [full-path (directory-path "test_fixtures/public/stylesheets")
-            new-config (add-directory-to-load-path {:load-paths []} "test_fixtures/public/stylesheets")]
-        (should= [full-path] (:load-paths new-config))))
-
-    (it "throws an exception when the directory does not exist"
-      (should-throw IllegalArgumentException "Could not find directory: uknown-dir"
-                    (add-directory-to-load-path {:load-paths []} "uknown-dir")))
-
-    )
+(describe "conveyor.core"
 
   (context "initialize-config"
 
@@ -167,11 +114,7 @@
     (it "defaults pipeline-enabled to true"
       (let [config (initialize-config {})]
         (should= true (:pipeline-enabled config))))
-
     )
-  )
-
-(describe "conveyor.core"
 
   (context "find-asset"
 

@@ -1,6 +1,7 @@
 (ns conveyor.finder.load-path-spec
   (:require [speclj.core :refer :all]
-            [conveyor.core :refer :all]))
+            [conveyor.core :refer :all]
+            [conveyor.config :refer :all]))
 
 (defn test-compiler [config body filename input-extension output-extension]
   (str body "compiled with " filename ":" input-extension ":" output-extension))

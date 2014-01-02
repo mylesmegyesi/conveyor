@@ -1,5 +1,5 @@
 (ns conveyor.test-plugin
-  (:require [conveyor.config :refer [add-directory-to-load-path]]))
+  (:require [conveyor.core :refer [add-directory-to-load-path]]))
 
 (defn configure-test-plugin [config]
   (->

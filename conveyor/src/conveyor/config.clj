@@ -1,41 +1,11 @@
 (ns conveyor.config
   (:require [clojure.java.io :refer [resource file]]
-            [clojure.string :as clj-str]))
+            [clojure.string :as clj-str]
+            [conveyor.core :refer [append-to-key]]))
 
-(defn append-to-key [m key value]
-  (update-in m [key] #(conj % value)))
-
-(defn- base-dir [full-path sub-path]
-  (first (clj-str/split full-path (re-pattern sub-path) 2)))
-
-(defn directory-path [path]
-  (let [directory (file path)]
-    (when (.exists directory)
-      (.getAbsolutePath directory))))
-
-(defn- normalize-resource-url [url]
-  (if (= "file" (.getProtocol url))
-    (directory-path (.getPath url))
-    (str url "/")))
-
-(defn resource-directory-path [directory-path resource-in-directory]
-  (let [with-leading-slash (str "/" resource-in-directory)
-        relative-path (str directory-path with-leading-slash)]
-    (when-let [resource-url (resource relative-path)]
-      (base-dir (normalize-resource-url resource-url) with-leading-slash))))
-
-(defn add-to-load-path [config path]
-  (append-to-key config :load-paths path))
-
-(defn add-resource-directory-to-load-path [config directory-path resource-in-directory]
-  (if-let [full-path (resource-directory-path directory-path resource-in-directory)]
-    (add-to-load-path config full-path)
-    (throw (IllegalArgumentException. (str "Could not find resource directory: " directory-path)))))
-
-(defn add-directory-to-load-path [config path]
-  (if-let [full-path (directory-path path)]
-    (add-to-load-path config full-path)
-    (throw (IllegalArgumentException. (str "Could not find directory: " path)))))
+(defmacro thread-pipeline-config [& body]
+  `(-> {}
+     ~@body))
 
 (defn add-compiler-config [config compiler-config]
   (append-to-key config :compilers compiler-config))

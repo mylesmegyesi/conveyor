@@ -3,22 +3,12 @@
             [conveyor.core :refer [bind-config build-pipeline find-asset initialize-config]]
             [clojure.string :refer [replace-first] :as clj-str]))
 
-(defprotocol GetConfig
-  (get-config [this]))
-
-(extend-protocol GetConfig
-  java.lang.Object
-  (get-config [this] (initialize-config this))
-
-  clojure.lang.Delay
-  (get-config [this] (initialize-config @this)))
-
 (defn- build-asset-request?-fn [config]
-  (fn [uri] (.startsWith uri (:prefix (get-config config)))))
+  (fn [uri] (.startsWith uri (:prefix config))))
 
 (defn- build-prefix-remover-fn [config]
   (fn [uri]
-    (let [prefix (:prefix (get-config config))
+    (let [prefix (:prefix config)
           without-prefix (replace-first uri prefix "")]
       (if (.startsWith without-prefix "/")
         (replace-first without-prefix "/" "")
@@ -34,7 +24,7 @@
          :body body}))))
 
 (defn- build-serve-asset-fn [config]
-  (let [pipeline (delay (build-pipeline (get-config config)))
+  (let [pipeline (delay (build-pipeline config))
         asset-request? (build-asset-request?-fn config)
         build-asset-response (asset-response-fn config)]
     (fn [uri]
@@ -47,14 +37,15 @@
       (or (serve-asset uri) (handler request)))))
 
 (defn wrap-pipeline-config [handler config]
-  (let [pipeline (delay (build-pipeline (get-config config)))]
+  (let [pipeline (delay (build-pipeline config))]
     (fn [request]
       (bind-config
-        (get-config config)
+        config
         @pipeline
         (fn [] (handler request))))))
 
 (defn wrap-asset-pipeline [handler -config]
-  (-> handler
-    (wrap-serve-asset -config)
-    (wrap-pipeline-config -config)))
+  (let [config (initialize-config -config)]
+    (-> handler
+      (wrap-serve-asset config)
+      (wrap-pipeline-config config))))

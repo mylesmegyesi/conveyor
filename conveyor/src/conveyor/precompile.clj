@@ -1,6 +1,7 @@
 (ns conveyor.precompile
   (:require [conveyor.core :refer [find-asset! pipeline pipeline-config]]
             [conveyor.file-utils :refer [file-join ensure-directory-of-file write-file write-gzipped-file]]
+            [conveyor.finder.interface :refer :all]
             [conveyor.manifest :refer [manifest-path]]
             ))
 
@@ -34,7 +35,24 @@
     (write-asset-path body digest-path))
   assets)
 
+(defn add-found-paths [paths regex finder]
+  (let [matches (get-paths-from-regex finder regex)]
+    (if (empty? matches)
+      paths
+      (apply conj paths matches))))
+
+(defn filter-regex [paths]
+  (let [finder (:finder (pipeline))]
+    (reduce
+      (fn [paths path]
+        (if (string? path)
+          (conj paths path)
+          (add-found-paths paths path finder)))
+      #{}
+      paths)))
+
 (defn precompile [paths]
-  (-> (doall (map #(find-asset! %) paths))
-    (write-assets)
-    (write-manifest)))
+  (let [filtered-paths (filter-regex paths)]
+    (-> (doall (map #(find-asset! %) filtered-paths))
+      (write-assets)
+      (write-manifest))))

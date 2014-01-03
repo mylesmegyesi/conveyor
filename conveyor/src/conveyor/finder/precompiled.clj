@@ -31,8 +31,7 @@
 
   (get-digest-path [this path]
     (:digest-path (get-from-manifest config path)))
-
-  )
+)
 
 (defn make-precompiled-asset-finder [config]
   (PrecompiledAssetFinder. config))

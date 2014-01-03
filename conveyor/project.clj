@@ -9,12 +9,12 @@
                  [commons-io "2.4"]
                  [com.novemberain/pantomime "1.7.0"]]
 
-  :profiles {:dev {:dependencies   [[speclj "2.6.1"]
+  :profiles {:dev {:dependencies   [[speclj "2.8.1"]
                                     [ring-mock "0.1.3"]]
                    :main           speclj.main
                    :aot            [speclj.main]
                    :resource-paths ["test_fixtures/resources"]
-                   :plugins        [[speclj "2.6.1"]]
+                   :plugins        [[speclj "2.8.1"]]
                    :target-path    "target/"
                    :test-paths     ["spec"]
                    :uberjar-name   "conveyor-standalone.jar"}

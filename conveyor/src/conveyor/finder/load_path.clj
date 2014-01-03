@@ -4,7 +4,7 @@
             [digest :refer [md5]]
             [conveyor.compile :refer [compile-asset]]
             [conveyor.file-utils :refer :all]
-            [conveyor.finder.interface :refer [AssetFinder]]))
+            [conveyor.finder.interface :refer [AssetFinder RegexFinder]]))
 
 (defn- format-asset-path [asset-path]
   (format "\"%s\"" asset-path))
@@ -127,6 +127,16 @@
                               (str (remove-extension logical-path) "-" digest)
                               (get-extension logical-path)))))))
 
+(defn find-regex-matches [regex {:keys [load-paths]}]
+  (let [possible-files (build-possible-input-files load-paths)]
+    (reduce
+      (fn [files {:keys [relative-path]}]
+        (if (re-matches regex relative-path)
+          (conj files relative-path)
+          files))
+      #{}
+      possible-files)))
+
 (deftype LoadPathAssetFinder [config]
   AssetFinder
 
@@ -140,6 +150,10 @@
   (get-digest-path [this path]
     (:digest-path (find-asset config path)))
 
+  RegexFinder
+
+  (get-paths-from-regex [this regex]
+    (find-regex-matches regex config))
   )
 
 (defn make-load-path-asset-finder [config]

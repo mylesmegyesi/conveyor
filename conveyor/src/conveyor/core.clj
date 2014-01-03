@@ -101,12 +101,12 @@
 (defn add-to-load-path [config path]
   (append-to-key config :load-paths path))
 
-(defn add-resource-directory-to-load-path [config directory-path resource-in-directory]
+(defn add-validated-resource-directory [config directory-path resource-in-directory]
   (if-let [full-path (resource-directory-path directory-path resource-in-directory)]
     (add-to-load-path config full-path)
     (throw (IllegalArgumentException. (str "Could not find resource directory: " directory-path)))))
 
-(defn add-directory-to-load-path [config path]
+(defn add-validated-directory [config path]
   (if-let [full-path (directory-path path)]
     (add-to-load-path config full-path)
     (throw (IllegalArgumentException. (str "Could not find directory: " path)))))
@@ -123,10 +123,10 @@
     (fn [config {:keys [type path file-in-dir] :as load-path}]
       (cond
         (= :resource-directory type)
-        (add-resource-directory-to-load-path config path file-in-dir)
+        (add-validated-resource-directory config path file-in-dir)
         (= :directory type)
-        (add-directory-to-load-path config path)
-        (not (map? load-path))
+        (add-validated-directory config path)
+        (instance? String load-path)
         (add-to-load-path config load-path)
         :else
         (throw-unknown-load-path-type type)))
@@ -165,9 +165,9 @@
 
 (defn initialize-config [config]
   (-> config
-      configure-load-paths
+      apply-defaults
       configure-plugins
-      apply-defaults))
+      configure-load-paths))
 
 (defmacro bind-config [config pipeline & body]
   `(binding [*pipeline-config* ~config

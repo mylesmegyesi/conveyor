@@ -1,7 +1,7 @@
 (ns conveyor.closure-spec
   (:require [speclj.core :refer :all]
             [conveyor.core :refer :all]
-            [conveyor.config :refer [thread-pipeline-config set-compression]]
+            [conveyor.config :refer :all]
             [conveyor.closure :refer :all]))
 
 (describe "conveyor.closure"

@@ -38,12 +38,12 @@
 
     (it "adds valid resource directory to the load path"
       (let [full-path (resource-directory-path "stylesheets" "test1.css")
-            new-config (add-resource-directory-to-load-path {:load-paths []} "stylesheets" "test1.css")]
+            new-config (add-validated-resource-directory {:load-paths []} "stylesheets" "test1.css")]
         (should= [full-path] (:load-paths new-config))))
 
     (it "throws an exception when the resource directory does not exist"
       (should-throw IllegalArgumentException "Could not find resource directory: uknown-dir"
-                    (add-resource-directory-to-load-path {:load-paths []} "uknown-dir" "test1.css")))
+                    (add-validated-resource-directory {:load-paths []} "uknown-dir" "test1.css")))
 
     )
 
@@ -51,12 +51,12 @@
 
     (it "adds valid directory to the load path"
       (let [full-path (directory-path "test_fixtures/public/stylesheets")
-            new-config (add-directory-to-load-path {:load-paths []} "test_fixtures/public/stylesheets")]
+            new-config (add-validated-directory {:load-paths []} "test_fixtures/public/stylesheets")]
         (should= [full-path] (:load-paths new-config))))
 
     (it "throws an exception when the directory does not exist"
       (should-throw IllegalArgumentException "Could not find directory: uknown-dir"
-                    (add-directory-to-load-path {:load-paths []} "uknown-dir")))
+                    (add-validated-directory {:load-paths []} "uknown-dir")))
 
     )
 

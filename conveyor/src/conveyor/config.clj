@@ -75,6 +75,9 @@
 (defn set-compile [config compile]
   (assoc config :compile compile))
 
+(defn set-cache-dir [config dir]
+  (assoc config :cache-dir dir))
+
 (defn set-pipeline-enabled [config enabled]
   (assoc config :pipeline-enabled enabled))
 

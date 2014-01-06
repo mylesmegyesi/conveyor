@@ -8,7 +8,7 @@
 (describe "conveyor.coffeescript"
 
   (with config (thread-pipeline-config
-                 (configure-coffeescript)
+                 (assoc :plugins [:coffeescript])
                  (add-directory-to-load-path "test_fixtures/javascripts")))
 
   (around [it]

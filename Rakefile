@@ -24,7 +24,7 @@ def spec(dir)
 end
 
 def _install(dir)
-  lein_task(dir, 'install')
+  lein_task(dir, 'with-profile deploy install')
 end
 
 def deploy(dir)

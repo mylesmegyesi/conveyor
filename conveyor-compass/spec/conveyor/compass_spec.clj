@@ -17,9 +17,8 @@
   (with compass-templates (str @frameworks "/compass/templates"))
   (with blueprint-stylesheets (str @frameworks "/blueprint/stylesheets"))
   (with config (thread-pipeline-config
-                 (configure-sass)
-                 (configure-compass)
-                 (add-directory-to-load-path "test_fixtures/stylesheets")))
+                 (add-directory-to-load-path "test_fixtures/stylesheets")
+                 (assoc :plugins [:sass :compass])))
 
   (around [it]
     (with-pipeline-config @config

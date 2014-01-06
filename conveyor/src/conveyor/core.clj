@@ -1,11 +1,11 @@
 (ns conveyor.core
-  (:require [clojure.string :as clj-str]
-            [clojure.java.io :refer [resource file]]
-            [conveyor.file-utils :refer [file-join]]
-            [conveyor.compile :refer [compile-asset]]
-            [conveyor.compress :refer [compress-asset]]
-            [conveyor.finder.interface :refer [get-asset get-logical-path get-digest-path]]
-            [conveyor.finder.factory :refer [make-asset-finder]]))
+  (:require [clojure.java.io           :refer [resource file]]
+            [clojure.string            :as clj-str]
+            [conveyor.compile          :refer [compile-asset]]
+            [conveyor.compress         :refer [compress-asset]]
+            [conveyor.file-utils       :refer [file-join]]
+            [conveyor.finder.factory   :refer [make-asset-finder]]
+            [conveyor.finder.interface :refer [get-asset get-logical-path get-digest-path]]))
 
 (defn compile? [config]
   (and (:pipeline-enabled config) (:compile config)))
@@ -151,6 +151,7 @@
 
 (def default-pipeline-config
   {:load-paths []
+   :cache-dir "target/conveyor-cache"
    :compilers []
    :compressors []
    :prefix "/"
@@ -169,14 +170,21 @@
       configure-plugins
       configure-load-paths))
 
-(defmacro bind-config [config pipeline & body]
-  `(binding [*pipeline-config* ~config
-            *pipeline* ~pipeline]
-    ~body))
+(defn bind-config [config pipeline f]
+  (binding [*pipeline-config* config
+            *pipeline* pipeline]
+    (f)))
+
+(defn build-pipeline-bind-fn [-config]
+  (let [config (initialize-config -config)
+        pipeline (build-pipeline config)]
+    (fn [f]
+      (bind-config config pipeline f))))
 
 (defmacro with-pipeline-config [config & body]
-  `(let [config# (initialize-config ~config)]
-     (bind-config config# (build-pipeline config#) (fn [] ~@body))))
+  `(let [f# (fn [] ~@body)
+         with-config# (build-pipeline-bind-fn ~config)]
+     (with-config# f#)))
 
 (defn- remove-asset-digest [path]
   (let [[match digest] (first (re-seq #"(?sm)-([0-9a-f]{7,40})\.[^.]+$" path))]

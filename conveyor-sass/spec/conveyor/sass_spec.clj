@@ -8,8 +8,8 @@
 
   (with stylesheets1 (directory-path "test_fixtures/stylesheets1"))
   (with config (thread-pipeline-config
-                 (configure-sass)
-                 (add-directory-to-load-path "test_fixtures/stylesheets1")))
+                 (add-directory-to-load-path "test_fixtures/stylesheets1")
+                 (assoc :plugins [:sass])))
 
   (with test4-url (asset-url "test4.png"))
 

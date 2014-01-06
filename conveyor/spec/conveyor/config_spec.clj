@@ -81,6 +81,11 @@
                      (set-pipeline-enabled true))]
         (should= {:pipeline-enabled true} config)))
 
+    (it "threads set-cache-dir"
+      (let [config (thread-pipeline-config
+                     (set-cache-dir "something"))]
+        (should= {:cache-dir "something"} config)))
+
     (it "threads multiple setters"
       (let [config (thread-pipeline-config
                      (set-asset-finder :my-finder)

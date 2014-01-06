@@ -1,7 +1,7 @@
 (ns conveyor.middleware
-  (:require [pantomime.mime :refer [mime-type-of]]
-            [conveyor.core :refer [bind-config build-pipeline find-asset initialize-config]]
-            [clojure.string :refer [replace-first] :as clj-str]))
+  (:require [clojure.string :refer [replace-first] :as clj-str]
+            [conveyor.core  :refer [bind-config build-pipeline find-asset initialize-config]]
+            [pantomime.mime :refer [mime-type-of]]))
 
 (defn- build-asset-request?-fn [config]
   (fn [uri] (.startsWith uri (:prefix config))))
@@ -24,8 +24,7 @@
          :body body}))))
 
 (defn- build-serve-asset-fn [config]
-  (let [pipeline (delay (build-pipeline config))
-        asset-request? (build-asset-request?-fn config)
+  (let [asset-request? (build-asset-request?-fn config)
         build-asset-response (asset-response-fn config)]
     (fn [uri]
       (when (asset-request? uri)
@@ -36,16 +35,22 @@
     (fn [{:keys [uri] :as request}]
       (or (serve-asset uri) (handler request)))))
 
-(defn wrap-pipeline-config [handler config]
-  (let [pipeline (delay (build-pipeline config))]
-    (fn [request]
-      (bind-config
-        config
-        @pipeline
-        (fn [] (handler request))))))
+(defn- wrap-bind-config [handler config pipeline]
+  (fn [request]
+    (bind-config
+      config
+      pipeline
+      (fn [] (handler request)))))
+
+(defn wrap-pipeline-config [handler -config]
+  (let [config (initialize-config -config)]
+    (wrap-bind-config
+      handler
+      config
+      (build-pipeline config))))
 
 (defn wrap-asset-pipeline [handler -config]
   (let [config (initialize-config -config)]
     (-> handler
       (wrap-serve-asset config)
-      (wrap-pipeline-config config))))
+      (wrap-bind-config config (build-pipeline config)))))

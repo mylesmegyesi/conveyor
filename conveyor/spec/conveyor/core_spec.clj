@@ -114,6 +114,10 @@
       (let [config (initialize-config {:output-dir "test_output"})]
         (should= "test_output" (:output-dir config))))
 
+    (it "uses target/conveyor-cache as the default cache path"
+      (let [config (initialize-config {})]
+        (should= "target/conveyor-cache" (:cache-dir config))))
+
     (it "uses public as the default the output-dir"
       (let [config (initialize-config {:output-dir nil})]
         (should= "public" (:output-dir config))))

@@ -73,4 +73,10 @@
     (let [handler (wrap-asset-pipeline (fn [_] (should (bound? #'*pipeline*))) @config)]
       (handler (mr/request :get "/unknown.js"))))
 
+  (it "initializes the config"
+    (let [absolute-stylesheets-path (directory-path "test_fixtures/public/stylesheets")
+          stylesheet-path-expanded? (fn [] (some #(= absolute-stylesheets-path %) (:load-paths *pipeline-config*)))
+          handler (wrap-pipeline-config (fn [_] (should (stylesheet-path-expanded?))) @config)]
+      (handler (mr/request :get "/unknown.js"))))
+
   )

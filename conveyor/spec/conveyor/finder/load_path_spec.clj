@@ -1,7 +1,8 @@
 (ns conveyor.finder.load-path-spec
   (:require [speclj.core :refer :all]
+            [conveyor.core :refer :all]
             [conveyor.config :refer :all]
-            [conveyor.core :refer [find-asset with-pipeline-config]]))
+            [conveyor.finder.load-path :refer [find-regex-matches]]))
 
 (defn test-compiler [config body filename input-extension output-extension]
   (str body "compiled with " filename ":" input-extension ":" output-extension))
@@ -95,4 +96,18 @@
         (should (find-asset "test3.fake-output"))
         (should= "Some fake thing1\n" (:body asset))
         (should= "test3.fake1" (:logical-path asset)))))
+
+  (it "returns a set of paths given a file-extension regex"
+    (let [paths (find-regex-matches #".*.js" (initialize-config @config))]
+      (should= #{"md5_test.js"
+                 "test8/index.js"
+                 "test7/index.js"
+                 "test8.js"
+                 "test1.js"
+                 "test.6/index.js"} paths)))
+
+  (it "returns a set of paths given a file-name regex"
+    (let [paths (find-regex-matches #"test8.*" (initialize-config @config))]
+      (should= #{"test8/index.js"
+                 "test8.js"} paths)))
   )

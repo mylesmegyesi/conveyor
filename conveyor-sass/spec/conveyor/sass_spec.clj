@@ -1,7 +1,7 @@
 (ns conveyor.sass-spec
   (:require [speclj.core :refer :all]
+            [conveyor.core :refer :all]
             [conveyor.config :refer :all]
-            [conveyor.core :refer [find-asset asset-url with-pipeline-config]]
             [conveyor.sass :refer :all]))
 
 (describe "conveyor.sass"

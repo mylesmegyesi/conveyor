@@ -2,8 +2,8 @@
   (:require [speclj.core :refer :all]
             [clojure.java.io :refer [file input-stream copy]]
             [clojure.edn :refer [read-string] :rename {read-string read-edn}]
+            [conveyor.core :refer :all]
             [conveyor.config :refer :all]
-            [conveyor.core :refer [with-pipeline-config pipeline-config]]
             [conveyor.precompile :refer :all]
             [conveyor.file-utils :refer [read-file read-stream]])
   (:import [org.apache.commons.io FileUtils]
@@ -42,6 +42,11 @@
 
   (it "compiles two files"
     (precompile ["test1.js" "test2.css"])
+    (should= "var test = 1;\n" (slurp "test_output/test1.js"))
+    (should= ".test2 { color: black; }\n" (slurp "test_output/test2.css")))
+
+  (it "compiles files given a regex"
+    (precompile ["test1.js" #"test2.*" #"not-found-regex"])
     (should= "var test = 1;\n" (slurp "test_output/test1.js"))
     (should= ".test2 { color: black; }\n" (slurp "test_output/test2.css")))
 

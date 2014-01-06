@@ -1,8 +1,8 @@
 (ns conveyor.compass-spec
   (:require [speclj.core :refer :all]
             [conveyor.sass :refer [configure-sass]]
-            [conveyor.config :refer :all]
             [conveyor.compass :refer :all]
+            [conveyor.config :refer :all]
             [conveyor.core :refer :all]))
 
 (describe "conveyor.compass"

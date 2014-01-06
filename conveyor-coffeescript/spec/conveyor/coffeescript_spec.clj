@@ -1,7 +1,7 @@
 (ns conveyor.coffeescript-spec
   (:require [speclj.core :refer :all]
+            [conveyor.core :refer :all]
             [conveyor.config :refer :all]
-            [conveyor.core :refer [find-asset with-pipeline-config]]
             [conveyor.coffeescript :refer :all])
   (:import [java.lang AssertionError]))
 

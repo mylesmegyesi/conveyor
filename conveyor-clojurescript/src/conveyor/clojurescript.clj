@@ -1,5 +1,6 @@
 (ns conveyor.clojurescript
-  (:require [conveyor.config :refer :all]
+  (:require [conveyor.core :refer :all]
+            [conveyor.config :refer :all]
             [cljs.closure :refer [build]])
   (:import [java.net URL URLClassLoader MalformedURLException]))
 

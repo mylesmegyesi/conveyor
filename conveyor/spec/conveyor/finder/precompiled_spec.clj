@@ -1,7 +1,7 @@
 (ns conveyor.finder.precompiled-spec
   (:require [speclj.core :refer :all]
-            [conveyor.config :refer :all]
-            [conveyor.core :refer [find-asset with-pipeline-config]]))
+            [conveyor.core :refer :all]
+            [conveyor.config :refer :all]))
 
 (describe "conveyor.finder.precompiled"
 

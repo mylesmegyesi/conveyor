@@ -1,7 +1,7 @@
 (ns conveyor.clojurescript-spec
   (:require [speclj.core :refer :all]
-            [conveyor.config :refer :all]
             [conveyor.core :refer :all]
+            [conveyor.config :refer :all]
             [conveyor.clojurescript :refer :all]))
 
 (describe "conveyor.clojurescript"

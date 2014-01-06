@@ -119,13 +119,15 @@
   (if-let [file (find-file config path)]
     (let [{:keys [logical-path absolute-path]} file
           body (read-file absolute-path)
-          digest (md5 body)]
-      (-> file
-        (assoc :body body)
-        (assoc :digest digest)
-        (assoc :digest-path (add-extension
-                              (str (remove-extension logical-path) "-" digest)
-                              (get-extension logical-path)))))))
+          asset (assoc file :body body)]
+      (if (:use-digest-path config)
+        (let [digest (md5 body)]
+          (-> asset
+            (assoc :digest digest)
+            (assoc :digest-path (add-extension
+                                  (str (remove-extension logical-path) "-" digest)
+                                  (get-extension logical-path)))))
+        asset))))
 
 (defn find-regex-matches [regex {:keys [load-paths]}]
   (let [possible-files (build-possible-input-files load-paths)]

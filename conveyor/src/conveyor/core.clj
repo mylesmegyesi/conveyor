@@ -192,9 +192,13 @@
       [digest (clj-str/replace path (str "-" digest) "")]
       [nil path])))
 
+(defn add-suffix [old suffix]
+  (if old
+    (str old suffix)))
+
 (defn add-asset-suffix [asset suffix]
-  (-> (update-in asset [:digest-path] #(str % suffix))
-      (update-in [:logical-path] #(str % suffix))))
+  (-> (update-in asset [:digest-path] #(add-suffix % suffix))
+      (update-in [:logical-path] #(add-suffix % suffix))))
 
 (defn wrap-suffix [handler]
   (fn [path]

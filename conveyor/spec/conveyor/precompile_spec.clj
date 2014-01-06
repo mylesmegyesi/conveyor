@@ -15,6 +15,7 @@
   (around [it]
     (let [config (thread-pipeline-config
                    (set-output-dir "test_output")
+                   (set-use-digest-path true)
                    (add-directory-to-load-path "test_fixtures/public/images")
                    (add-directory-to-load-path "test_fixtures/public/javascripts")
                    (add-directory-to-load-path "test_fixtures/public/stylesheets"))]

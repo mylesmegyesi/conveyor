@@ -205,17 +205,23 @@
             (should= "/test1.js" (asset-url "test1.js"))
             (should= asset (find-asset (:logical-path asset)))))
 
-        (it "returns the digest and digest path"
+        (it "does not return the digest and digest path"
           (prepare-asset "test1.js")
           (let [asset (find-asset "test1.js")]
-            (should= "200368af90cc4c6f4f1ddf36f97a279e" (:digest asset))
-            (should= "test1-200368af90cc4c6f4f1ddf36f97a279e.js" (:digest-path asset))))
+            (should-be-nil (:digest asset))
+            (should-be-nil (:digest-path asset))))
+
+        (it "returns the digest and digest path if configured to"
+          (with-pipeline-config (set-use-digest-path (pipeline-config) true)
+            (prepare-asset "test1.js")
+            (let [asset (find-asset "test1.js")]
+              (should= "200368af90cc4c6f4f1ddf36f97a279e" (:digest asset))
+              (should= "test1-200368af90cc4c6f4f1ddf36f97a279e.js" (:digest-path asset)))))
 
         (it "maintains an iefix suffix"
             (prepare-asset "test1.js")
             (let [asset (find-asset "test1.js?#iefix")]
-              (should= "200368af90cc4c6f4f1ddf36f97a279e" (:digest asset))
-              (should= "test1-200368af90cc4c6f4f1ddf36f97a279e.js?#iefix" (:digest-path asset))))
+              (should= "test1.js?#iefix" (:logical-path asset))))
 
         (it "finds an asset with multiple load paths"
           (with-pipeline-config (add-directory-to-load-path (pipeline-config) "test_fixtures/public/stylesheets")
@@ -223,8 +229,7 @@
             (let [asset (find-asset "test2.css")]
               (should= ".test2 { color: black; }\n" (:body asset))
               (should= "test2.css" (:logical-path asset))
-              (should= "/test2.css" (asset-url "test2.css"))
-              (should= "test2-9d7e7252425acc78ff419cf3d37a7820.css" (:digest-path asset)))))
+              (should= "/test2.css" (asset-url "test2.css")))))
 
         (it "finds an asset with a resource directory on its load path"
           (with-pipeline-config (add-resource-directory-to-load-path (pipeline-config) "stylesheets" "test1.css")
@@ -232,8 +237,7 @@
             (let [asset (find-asset "test1.css")]
               (should= ".test1 { color: white; }\n" (:body asset))
               (should= "test1.css" (:logical-path asset))
-              (should= "/test1.css" (asset-url "test1.css"))
-              (should= "test1-89df887049f959cbe331b1da471f7e24.css" (:digest-path asset)))))
+              (should= "/test1.css" (asset-url "test1.css")))))
 
         (it "returns nil if the asset could not be found"
           (prepare-asset "test1.js")
@@ -259,8 +263,7 @@
             (let [asset (find-asset "test2.fake-output")]
               (should= "Some fake thing\n" (:body asset))
               (should= "test2.fake-output" (:logical-path asset))
-              (should= "/test2.fake-output" (asset-url "test2.fake-output"))
-              (should= "test2-979d812cfd0a7dc744af9e083a63ff10.fake-output" (:digest-path asset)))))
+              (should= "/test2.fake-output" (asset-url "test2.fake-output")))))
 
         (it "maintains file extension suffix"
           (with-pipeline-config @fake-compiler-config
@@ -268,8 +271,7 @@
             (let [asset (find-asset "test2.fake-output?#wat")]
               (should= "Some fake thing\n" (:body asset))
               (should= "test2.fake-output?#wat" (:logical-path asset))
-              (should= "/test2.fake-output?#wat" (asset-url "test2.fake-output?#wat"))
-              (should= "test2-979d812cfd0a7dc744af9e083a63ff10.fake-output?#wat" (:digest-path asset)))))
+              (should= "/test2.fake-output?#wat" (asset-url "test2.fake-output?#wat")))))
 
         (it "finds assets using the output extensions given by compilers if the file name has many dots"
           (with-pipeline-config @fake-compiler-config
@@ -277,8 +279,7 @@
             (let [asset (find-asset "test.2.fake-output")]
               (should= "Some fake thing with dots\n" (:body asset))
               (should= "test.2.fake-output" (:logical-path asset))
-              (should= "/test.2.fake-output" (asset-url "test.2.fake-output"))
-              (should= "test.2-e2cb442c231d4d2420a64a834c86324c.fake-output" (:digest-path asset)))))
+              (should= "/test.2.fake-output" (asset-url "test.2.fake-output")))))
 
         (it "finds assets using the input extensions given by compilers if the file name has many dots"
           (with-pipeline-config @fake-compiler-config
@@ -286,8 +287,7 @@
             (let [asset (find-asset "test.2.fake")]
               (should= "Some fake thing with dots\n" (:body asset))
               (should= "test.2.fake" (:logical-path asset))
-              (should= "/test.2.fake" (asset-url "test.2.fake"))
-              (should= "test.2-e2cb442c231d4d2420a64a834c86324c.fake" (:digest-path asset)))))
+              (should= "/test.2.fake" (asset-url "test.2.fake")))))
 
         (it "returns nil if the file is found, but the requested file extension does not match any compilers output extensions"
           (with-pipeline-config @fake-compiler-config
@@ -418,7 +418,7 @@
           (with-pipeline-config @markdown-config
             (prepare-asset "test1.js")
             (let [asset (find-asset "test1.js")]
-              (should= asset (find-asset (:digest-path asset))))))
+              (should= asset (find-asset (:logical-path asset))))))
 
         (it "returns nil if the digest does not match"
           (with-pipeline-config @markdown-config

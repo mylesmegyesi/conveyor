@@ -1,6 +1,6 @@
 (ns conveyor.precompile
   (:require [conveyor.core :refer [find-asset! pipeline pipeline-config]]
-            [conveyor.file-utils :refer [file-join ensure-directory-of-file write-file write-gzipped-file]]
+            [conveyor.file-utils :refer [file-join ensure-directory-of-file write-file]]
             [conveyor.finder.interface :refer :all]
             [conveyor.manifest :refer [manifest-path]]
             ))
@@ -20,8 +20,7 @@
   (let [prefixed-path ((:path-prefixer (pipeline)) path)
         file-name (file-join (:output-dir (pipeline-config)) prefixed-path)]
     (ensure-directory-of-file file-name)
-    (write-file file-name body)
-    (write-gzipped-file file-name body)))
+    (write-file file-name body)))
 
 (defn- write-manifest [assets]
   (let [manifest (manifest-path (pipeline-config))]

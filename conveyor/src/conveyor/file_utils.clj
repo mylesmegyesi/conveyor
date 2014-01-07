@@ -3,8 +3,7 @@
             [clojure.string :refer [replace-first]])
   (:import [org.apache.commons.io FilenameUtils FileUtils]
            [java.net MalformedURLException JarURLConnection URL]
-           [java.io FileNotFoundException FileOutputStream FileInputStream]
-           [java.util.zip GZIPOutputStream]))
+           [java.io FileNotFoundException FileOutputStream FileInputStream]))
 
 (defn remove-extension [file-path]
   (FilenameUtils/removeExtension file-path))
@@ -124,10 +123,6 @@
 
 (defmethod body-length FileInputStream [body]
   (.size (.getChannel body)))
-
-(defn write-gzipped-file [f body]
-  (let [file-name (add-extension f "gz")]
-    (body-to-stream body (GZIPOutputStream. (FileOutputStream. (file file-name))))))
 
 (defn write-file [f body]
   (body-to-stream body (FileOutputStream. (file f))))

@@ -7,8 +7,7 @@
             [conveyor.precompile :refer :all]
             [conveyor.file-utils :refer [read-file read-stream]])
   (:import [org.apache.commons.io FileUtils]
-           [java.io ByteArrayOutputStream FileInputStream]
-           [java.util.zip GZIPInputStream]))
+           [java.io ByteArrayOutputStream FileInputStream]))
 
 (describe "conveyor.precompile"
 
@@ -104,17 +103,4 @@
         (should=
           @manifest-output
           manifest))))
-
-  (defn gunzip [file-name]
-    (read-stream (GZIPInputStream. (FileInputStream. (file file-name)))))
-
-  (it "gzips the output"
-    (precompile ["test1.js"])
-    (should= "var test = 1;\n" (gunzip "test_output/test1.js.gz")))
-
-  (it "gzips a png file"
-    (precompile ["joodo.png"])
-    (should= 6533 (count (gunzip "test_output/joodo.png.gz")))
-    (should= 6470 (count (read-file "test_output/joodo.png.gz"))))
-
   )

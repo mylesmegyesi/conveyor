@@ -11,7 +11,7 @@
               (manifest-path config)))))
 
 (defn- read-file-in-output [{:keys [output-dir]} file-path]
-  (read-file (file-join output-dir file-path)))
+  (file-input-stream (file-join output-dir file-path)))
 
 (defn- get-from-manifest [config path]
   (let [manifest (read-manifest config)]

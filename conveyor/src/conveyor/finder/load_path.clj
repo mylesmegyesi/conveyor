@@ -140,8 +140,14 @@
          :logical-path logical-path
          :body (file-input-stream absolute-path)}))))
 
-(defn find-regex-matches [regex {:keys [load-paths]}]
-  (let [possible-files (build-possible-input-files load-paths)]
+(defn all-possible-output [{:keys [load-paths] :as config}]
+  (let [possible-input (build-possible-input-files load-paths)
+        possible-paths (map :relative-path possible-input)
+        possible-output (map #(build-possible-files config % (get-extension %)) possible-paths)]
+    (flatten possible-output)))
+
+(defn find-regex-matches [regex config]
+  (let [possible-files (all-possible-output config)]
     (reduce
       (fn [files {:keys [relative-path]}]
         (if (re-matches regex relative-path)

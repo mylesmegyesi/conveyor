@@ -14,6 +14,10 @@
 
   (around [it]
     (let [config (thread-pipeline-config
+                   (add-compiler-config
+                     (configure-compiler
+                       (add-input-extension "js")
+                       (add-output-extension "precompiled")))
                    (set-output-dir "test_output")
                    (set-use-digest-path true)
                    (add-directory-to-load-path "test_fixtures/public/images")
@@ -47,9 +51,10 @@
     (should= ".test2 { color: black; }\n" (slurp "test_output/test2.css")))
 
   (it "compiles files given a regex"
-    (precompile ["test1.js" #"test2.*" #"not-found-regex"])
+    (precompile ["test1.js" #"test2.*" #".*1.precompiled" #"not-found-regex"])
     (should= "var test = 1;\n" (slurp "test_output/test1.js"))
-    (should= ".test2 { color: black; }\n" (slurp "test_output/test2.css")))
+    (should= ".test2 { color: black; }\n" (slurp "test_output/test2.css"))
+    (should= "var test = 1;\n" (slurp "test_output/test1.precompiled")))
 
   (it "compiles a png file"
     (precompile ["joodo.png"])

@@ -1,5 +1,5 @@
 (ns conveyor.finder.precompiled
-  (:require [conveyor.file-utils :refer [get-extension replace-extension add-extension read-file file-join]]
+  (:require [conveyor.file-utils :refer [file-input-stream get-extension replace-extension add-extension read-file file-join]]
             [conveyor.finder.interface :refer [AssetFinder]]
             [conveyor.manifest :refer [read-manifest manifest-path]]))
 
@@ -25,6 +25,9 @@
   AssetFinder
   (get-asset [this path]
     (find-asset config path))
+
+  (get-static-asset [this path]
+   (find-asset config path))
 
   (get-logical-path [this path]
     (:logical-path (get-from-manifest config path)))

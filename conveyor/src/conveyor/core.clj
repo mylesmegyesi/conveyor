@@ -73,8 +73,10 @@
 
 (defn- do-get [path]
   (let [{:keys [finder pipeline-fn]} (pipeline)]
-    (when-let [asset (get-asset finder path)]
-      (pipeline-fn path asset))))
+    (if-let [asset (get-static-asset finder path)]
+      asset
+      (when-let [asset (get-asset finder path)]
+        (pipeline-fn path asset)))))
 
 (defn append-to-key [m key value]
   (update-in m [key] #(conj % value)))

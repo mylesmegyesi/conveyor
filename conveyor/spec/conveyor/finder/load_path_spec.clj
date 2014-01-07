@@ -50,8 +50,7 @@
     (with-pipeline-config @fake1-compiler-config
       (let [base-path (directory-path "test_fixtures/public/javascripts")]
         (should-throw
-          Exception (format "Search for \"test5.fake-output\" returned multiple results: \"%s\", \"%s\", \"%s\""
-                            (str base-path "/test5.fake-output")
+          Exception (format "Search for \"test5.fake-output\" returned multiple results: \"%s\", \"%s\""
                             (str base-path "/test5.fake")
                             (str base-path "/test5.fake1"))
           (find-asset "test5.fake-output")))))
@@ -87,14 +86,14 @@
     (with-pipeline-config (set-compile @fake1-compiler-config false)
       (let [asset (find-asset "test3.fake1")]
         (should (find-asset "test3.fake-output"))
-        (should= "Some fake thing1\n" (:body asset))
+        (should= "Some fake thing1\n" (slurp (:body asset)))
         (should= "test3.fake1" (:logical-path asset)))))
 
   (it "finds assets using compiler extensions when the pipeline is disabled"
     (with-pipeline-config (set-pipeline-enabled @fake1-compiler-config false)
       (let [asset (find-asset "test3.fake1")]
         (should (find-asset "test3.fake-output"))
-        (should= "Some fake thing1\n" (:body asset))
+        (should= "Some fake thing1\n" (slurp (:body asset)))
         (should= "test3.fake1" (:logical-path asset)))))
 
   (it "returns a set of paths given a file-extension regex"

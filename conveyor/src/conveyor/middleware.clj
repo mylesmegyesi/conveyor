@@ -19,7 +19,7 @@
     (fn [uri]
       (when-let [{:keys [body logical-path]} (find-asset (remove-prefix uri))]
         {:status 200
-         :headers {"Content-Length" (str (count body))
+         :headers {"Content-Length" (str (body-length body))
                    "Content-Type" (mime-type-of logical-path)}
          :body body}))))
 

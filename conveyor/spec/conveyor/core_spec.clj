@@ -9,11 +9,17 @@
 
 (describe "conveyor.core"
 
+  (defn slurp-or-read [body]
+    (try
+      (slurp body)
+    (catch java.io.FileNotFoundException e
+      body)))
+
   (context "resource-directory-path"
 
     (it "builds the full path to a jar resource directory"
       (let [full-path (resource-directory-path "stylesheets" "test1.css")]
-        (should= ".test1 { color: white; }\n" (slurp (str full-path "/test1.css")))))
+        (should= ".test1 { color: white; }\n" (slurp-or-read (str full-path "/test1.css")))))
 
     (it "returns nil when the directory does not exist"
       (should-be-nil (resource-directory-path "non_existant_dir" "test1.css")))
@@ -27,7 +33,7 @@
 
     (it "builds the full path to a directory"
       (let [full-path (directory-path "test_fixtures/public/stylesheets")]
-        (should= ".test2 { color: black; }\n" (slurp (str full-path "/test2.css")))))
+        (should= ".test2 { color: black; }\n" (slurp-or-read (str full-path "/test2.css")))))
 
     (it "returns nil when the directory does not exist"
       (should-be-nil (directory-path "non_existant_dir")))
@@ -196,14 +202,14 @@
         (it "finds an asset and returns the body"
           (prepare-asset "test1.js")
           (let [found-asset (find-asset "test1.js")]
-            (should= "var test = 1;\n" (:body found-asset))))
+            (should= "var test = 1;\n" (slurp-or-read (:body found-asset)))))
 
         (it "returns the logical path"
           (prepare-asset "test1.js")
           (let [asset (find-asset "test1.js")]
             (should= "test1.js" (:logical-path asset))
             (should= "/test1.js" (asset-url "test1.js"))
-            (should= asset (find-asset (:logical-path asset)))))
+            (should= (slurp-or-read (:body asset)) (slurp-or-read (:body (find-asset (:logical-path asset)))))))
 
         (it "does not return the digest and digest path"
           (prepare-asset "test1.js")
@@ -227,7 +233,7 @@
           (with-pipeline-config (add-directory-to-load-path (pipeline-config) "test_fixtures/public/stylesheets")
             (prepare-asset "test2.css")
             (let [asset (find-asset "test2.css")]
-              (should= ".test2 { color: black; }\n" (:body asset))
+              (should= ".test2 { color: black; }\n" (slurp-or-read (:body asset)))
               (should= "test2.css" (:logical-path asset))
               (should= "/test2.css" (asset-url "test2.css")))))
 
@@ -235,7 +241,7 @@
           (with-pipeline-config (add-resource-directory-to-load-path (pipeline-config) "stylesheets" "test1.css")
             (prepare-asset "test1.css")
             (let [asset (find-asset "test1.css")]
-              (should= ".test1 { color: white; }\n" (:body asset))
+              (should= ".test1 { color: white; }\n" (slurp-or-read (:body asset)))
               (should= "test1.css" (:logical-path asset))
               (should= "/test1.css" (asset-url "test1.css")))))
 
@@ -285,7 +291,7 @@
           (with-pipeline-config @fake-compiler-config
             (prepare-asset "test.2.fake")
             (let [asset (find-asset "test.2.fake")]
-              (should= "Some fake thing with dots\n" (:body asset))
+              (should= "Some fake thing with dots\n" (slurp-or-read (:body asset)))
               (should= "test.2.fake" (:logical-path asset))
               (should= "/test.2.fake" (asset-url "test.2.fake")))))
 
@@ -329,6 +335,14 @@
               (should= "test3.fake-output" (:logical-path asset))
               (should= "/test3.fake-output" (asset-url "test3.fake-output")))))
 
+        (it "does not compile a static file"
+          (with-pipeline-config @test-compiler-config
+            (prepare-asset "test1.js")
+            (let [asset (find-asset "test1.js")]
+              (should= "var test = 1;\n" (slurp-or-read (:body asset)))
+              (should= "test1.js" (:logical-path asset))
+              (should= "/test1.js" (asset-url "test1.js")))))
+
         (defn test-compressor [config body filename]
           (str body "compressed"))
 
@@ -355,7 +369,7 @@
           (with-pipeline-config (set-compression @test-compressor-config false)
             (prepare-asset "test1.js")
             (let [asset (find-asset "test1.js")]
-              (should= "var test = 1;\n" (:body asset)))))
+              (should= "var test = 1;\n" (slurp-or-read (:body asset))))))
 
         (it "does not compress the asset when the pipeline is disabled"
           (with-pipeline-config (set-pipeline-enabled @test-compressor-config false)
@@ -413,12 +427,6 @@
             (should= "Multiple outputs\n" (:body txt-asset))
             (should= "multiple_outputs.txt" (:logical-path txt-asset))
             (should= "/multiple_outputs.txt" (asset-url "multiple_outputs.txt")))))
-
-        (it "finds an asset using the digest path"
-          (with-pipeline-config @markdown-config
-            (prepare-asset "test1.js")
-            (let [asset (find-asset "test1.js")]
-              (should= asset (find-asset (:logical-path asset))))))
 
         (it "returns nil if the digest does not match"
           (with-pipeline-config @markdown-config

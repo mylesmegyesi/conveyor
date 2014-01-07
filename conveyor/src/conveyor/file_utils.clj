@@ -3,7 +3,7 @@
             [clojure.string :refer [replace-first]])
   (:import [org.apache.commons.io FilenameUtils FileUtils]
            [java.net MalformedURLException JarURLConnection URL]
-           [java.io FileNotFoundException FileOutputStream]
+           [java.io FileNotFoundException FileOutputStream FileInputStream]
            [java.util.zip GZIPOutputStream]))
 
 (defn remove-extension [file-path]
@@ -75,15 +75,17 @@
 (defn ensure-directory-of-file [file-name]
   (ensure-directory (.getParentFile (file file-name))))
 
-(defn read-stream [stream]
-  (let [sb (StringBuilder.)]
-    (with-open [stream stream]
-      (loop [c (.read stream)]
-        (if (neg? c)
-          (str sb)
-          (do
-            (.append sb (char c))
-            (recur (.read stream))))))))
+(def read-stream
+  (memoize
+    (fn [stream]
+      (let [sb (StringBuilder.)]
+        (with-open [stream stream]
+          (loop [c (.read stream)]
+            (if (neg? c)
+              (str sb)
+              (do
+                (.append sb (char c))
+                (recur (.read stream))))))))))
 
 (defn- read-normal-file [file-path]
   (let [file (as-file file-path)]
@@ -103,15 +105,32 @@
     file
     (read-resource-file file-path)))
 
-(defn- string->stream [body out]
+(defmulti body-to-stream (fn [x _] (type x)))
+
+(defmethod body-to-stream :default [body out]
   (with-open [out out]
     (doseq [c (.toCharArray body)]
       (.write out (int c)))))
 
+(defmethod body-to-stream FileInputStream [body out]
+    (with-open [out out]
+      (doseq [c (.toCharArray (read-stream body))]
+        (.write out (int c)))))
+
+(defmulti body-length #(type %))
+
+(defmethod body-length :default [body]
+  (count body))
+
+(defmethod body-length FileInputStream [body]
+  (.size (.getChannel body)))
+
 (defn write-gzipped-file [f body]
   (let [file-name (add-extension f "gz")]
-    (string->stream body (GZIPOutputStream. (FileOutputStream. (file file-name))))))
+    (body-to-stream body (GZIPOutputStream. (FileOutputStream. (file file-name))))))
 
 (defn write-file [f body]
-  (string->stream body (FileOutputStream. (file f))))
+  (body-to-stream body (FileOutputStream. (file f))))
 
+(defn file-input-stream [path]
+  (FileInputStream. (file path)))

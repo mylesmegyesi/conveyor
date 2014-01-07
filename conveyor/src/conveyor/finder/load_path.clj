@@ -129,6 +129,17 @@
                                   (get-extension logical-path)))))
         asset))))
 
+(defn find-static-asset [{:keys [compress use-digest-path load-paths]} path]
+  (when (not (or compress use-digest-path))
+    (let [possible-files (build-possible-input-files load-paths)
+          matched-files (match-files possible-files [{:relative-path path :logical-path path}])
+          {:keys [logical-path absolute-path] :as matched-file} (first matched-files)]
+      (when matched-file
+        {:absolute-path absolute-path
+         :extension (get-extension logical-path)
+         :logical-path logical-path
+         :body (file-input-stream absolute-path)}))))
+
 (defn find-regex-matches [regex {:keys [load-paths]}]
   (let [possible-files (build-possible-input-files load-paths)]
     (reduce
@@ -144,6 +155,9 @@
 
   (get-asset [this path]
     (find-asset config path))
+
+  (get-static-asset [this path]
+    (find-static-asset config path))
 
   (get-logical-path [this path]
     (when-let [file (find-file config path)]

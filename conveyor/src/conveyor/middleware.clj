@@ -24,7 +24,8 @@
          :body body}))))
 
 (defn- build-serve-asset-fn [config]
-  (let [asset-request? (build-asset-request?-fn config)
+  (let [pipeline (delay (build-pipeline config))
+        asset-request? (build-asset-request?-fn config)
         build-asset-response (asset-response-fn config)]
     (fn [uri]
       (when (asset-request? uri)

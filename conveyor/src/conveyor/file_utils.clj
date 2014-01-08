@@ -104,25 +104,28 @@
     file
     (read-resource-file file-path)))
 
-(defmulti body-to-stream (fn [x _] (type x)))
+(defprotocol FileBody
+  (body-to-stream [this out])
+  (body-length [this]))
 
-(defmethod body-to-stream :default [body out]
-  (with-open [out out]
-    (doseq [c (.toCharArray body)]
-      (.write out (int c)))))
-
-(defmethod body-to-stream FileInputStream [body out]
+(extend-protocol FileBody
+  String
+  (body-to-stream [this out]
     (with-open [out out]
-      (doseq [c (.toCharArray (read-stream body))]
+      (doseq [c (.toCharArray this)]
         (.write out (int c)))))
 
-(defmulti body-length #(type %))
+  (body-length [this]
+    (count this))
 
-(defmethod body-length :default [body]
-  (count body))
+  FileInputStream
+  (body-to-stream [this out]
+    (with-open [out out]
+      (doseq [c (.toCharArray (read-stream this))]
+        (.write out (int c)))))
 
-(defmethod body-length FileInputStream [body]
-  (.size (.getChannel body)))
+  (body-length [this]
+    (.size (.getChannel this))))
 
 (defn write-file [f body]
   (body-to-stream body (FileOutputStream. (file f))))

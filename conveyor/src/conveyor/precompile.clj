@@ -1,5 +1,5 @@
 (ns conveyor.precompile
-  (:require [conveyor.core :refer [find-asset! pipeline pipeline-config get-path-prefixer-fn]]
+  (:require [conveyor.core :refer [find-asset! pipeline pipeline-config]]
             [conveyor.file-utils :refer [file-join ensure-directory-of-file write-file]]
             [conveyor.manifest :refer [manifest-path]]))
 
@@ -15,7 +15,7 @@
     assets))
 
 (defn- write-asset-path [body path]
-  (let [prefixed-path ((get-path-prefixer-fn (pipeline-config)) path)
+  (let [prefixed-path ((:path-prefixer (pipeline)) path)
         file-name (file-join (:output-dir (pipeline-config)) prefixed-path)]
     (ensure-directory-of-file file-name)
     (write-file file-name body)))

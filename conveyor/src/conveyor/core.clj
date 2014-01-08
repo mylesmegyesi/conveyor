@@ -3,7 +3,7 @@
             [clojure.string :as clj-str]
             [conveyor.file-utils :refer [file-join]]
             [conveyor.strategy.interface :refer [get-asset get-logical-path get-digest-path]]
-            [conveyor.strategy.factory :refer [make-pipeline]]))
+            [conveyor.strategy.factory :refer [make-pipeline-strategy]]))
 
 (declare ^:dynamic *pipeline*)
 (declare ^:dynamic *pipeline-config*)
@@ -117,6 +117,28 @@
             *pipeline* pipeline]
     (f)))
 
+(defn- build-path-prefixer-fn [config]
+  (if-let [prefix (:prefix config)]
+    (fn [path] (file-join "/" prefix path))
+    (fn [path] (file-join "/" path))))
+
+(defn build-path-finder-fn [strategy config]
+  (if (:use-digest-path config)
+    (fn [path] (get-digest-path strategy path))
+    (fn [path] (get-logical-path strategy path))))
+
+(defn build-url-builder-fn [config]
+  (if-let [asset-host (:asset-host config)]
+    (fn [path] (str asset-host path))
+    (fn [path] path)))
+
+(defn build-pipeline [config]
+  (let [strategy (make-pipeline-strategy config)]
+    {:strategy strategy
+     :url-builder (build-url-builder-fn config)
+     :path-prefixer (build-path-prefixer-fn config)
+     :path-finder (build-path-finder-fn strategy config)}))
+
 (defn build-pipeline-bind-fn [-config]
   (let [config (initialize-config -config)
         pipeline (build-pipeline config)]
@@ -127,13 +149,8 @@
   `(let [config# (initialize-config ~config)]
      (bind-config config# (build-pipeline config#) (fn [] ~@body))))
 
-(defn- do-get [path]
-  (let [pipeline (pipeline)]
-    (when-let [asset (get-asset pipeline path)]
-      asset)))
-
 (defn find-asset [path]
-  (do-get path))
+  (get-asset (:strategy (pipeline)) path))
 
 (defmacro throw-unless-found [path & body]
   `(if-let [asset# ~@body]
@@ -143,32 +160,18 @@
 (defn find-asset! [path]
   (throw-unless-found path (find-asset path)))
 
-(defn get-path-prefixer-fn [config]
-  (if-let [prefix (:prefix config)]
-    (fn [path] (file-join "/" prefix path))
-    (fn [path] (file-join "/" path))))
-
-(defn get-path-finder-fn [config]
-  (if (:use-digest-path config)
-    (fn [path] (get-digest-path (pipeline) path))
-    (fn [path] (get-logical-path (pipeline) path))))
-
-(defn get-build-url-fn [config]
-  (if-let [asset-host (:asset-host (pipeline-config))]
-    (fn [path] (str asset-host path))
-    (fn [path] path)))
-
 (defn- get-path [path]
-  (let [config (pipeline-config)
-        prefix-fn (get-path-prefixer-fn config)
-        path-finder-fn (get-path-finder-fn config)]
+  (let [pipe (pipeline)
+        prefix-fn (:path-prefixer pipe)
+        path-finder-fn (:path-finder pipe)]
     (if-let [path (path-finder-fn path)]
       (prefix-fn path))))
 
 (defn- asset-path [path]
   (throw-unless-found path (get-path path)))
 
-(defn asset-url [path]
-  (let [build-url-fn (get-build-url-fn (pipeline-config))]
-    (build-url-fn (asset-path path))))
+(defn- build-url [path]
+  ((:url-builder (pipeline)) path))
 
+(defn asset-url [path]
+  (build-url (asset-path path)))

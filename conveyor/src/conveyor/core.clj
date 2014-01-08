@@ -125,7 +125,7 @@
 
 (defmacro with-pipeline-config [config & body]
   `(let [config# (initialize-config ~config)]
-     (bind-config config# (make-pipeline config#) (fn [] ~@body))))
+     (bind-config config# (build-pipeline config#) (fn [] ~@body))))
 
 (defn- do-get [path]
   (let [pipeline (pipeline)]

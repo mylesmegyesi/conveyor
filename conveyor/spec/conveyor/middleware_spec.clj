@@ -1,15 +1,21 @@
 (ns conveyor.middleware-spec
   (:require [speclj.core :refer :all]
             [ring.mock.request :as mr]
+            [ring.middleware.file-info :refer [wrap-file-info]]
             [conveyor.core :refer :all]
             [conveyor.config :refer :all]
-            [conveyor.file-utils :refer [body-length]]
             [conveyor.middleware :refer :all]))
 
 (describe "conveyor.middleware"
 
   (defn slurp-body [response]
     (update-in response [:body] #(slurp %)))
+
+  (defn do-handler [handler request]
+    (let [wrapped-handler (wrap-file-info handler)]
+     (-> (wrapped-handler request)
+         (slurp-body)
+         (update-in [:headers] #(dissoc % "Last-Modified")))))
 
   (with config (thread-pipeline-config
                  (add-directory-to-load-path "test_fixtures/public/javascripts")
@@ -21,30 +27,30 @@
           expected-asset (with-pipeline-config @config (find-asset "test1.js"))]
       (should=
         {:status 200
-         :headers {"Content-Length" (str (body-length (:body expected-asset)))
-                   "Content-Type" "application/javascript"}
+         :headers {"Content-Length" "14"
+                   "Content-Type" "text/javascript"}
          :body (slurp (:body expected-asset))}
-        (slurp-body (handler (mr/request :get "/test1.js"))))))
+        (do-handler handler (mr/request :get "/test1.js")))))
 
   (it "serves assets with prefix"
     (let [handler (wrap-asset-pipeline (fn [_] :not-found) (add-prefix @config "/assets"))
           expected-asset (with-pipeline-config @config (find-asset "test1.js"))]
       (should=
         {:status 200
-         :headers {"Content-Length" (str (body-length (:body expected-asset)))
-                   "Content-Type" "application/javascript"}
+         :headers {"Content-Length" "14"
+                   "Content-Type" "text/javascript"}
          :body (slurp (:body expected-asset))}
-        (slurp-body (handler (mr/request :get "/assets/test1.js"))))))
+        (do-handler handler (mr/request :get "/assets/test1.js")))))
 
   (it "detects the content type of a css file"
     (let [handler (wrap-asset-pipeline (fn [_] :not-found) @config)
           expected-asset (with-pipeline-config @config (find-asset "test2.css"))]
       (should=
         {:status 200
-         :headers {"Content-Length" (str (body-length (:body expected-asset)))
+         :headers {"Content-Length" "25"
                    "Content-Type" "text/css"}
          :body (slurp (:body expected-asset))}
-        (slurp-body (handler (mr/request :get "/test2.css"))))))
+        (do-handler handler (mr/request :get "/test2.css")))))
 
   (it "reads a png file"
     (let [handler (wrap-asset-pipeline (fn [_] :not-found) @config)
@@ -54,7 +60,7 @@
          :headers {"Content-Length" "6533"
                    "Content-Type" "image/png"}
          :body (slurp (:body expected-asset))}
-        (slurp-body (handler (mr/request :get "/joodo.png"))))))
+        (do-handler handler (mr/request :get "/joodo.png")))))
 
   (it "reads a resource png file"
     (let [config (thread-pipeline-config
@@ -66,7 +72,7 @@
          :headers {"Content-Length" "6533"
                    "Content-Type" "image/png"}
          :body (slurp (:body expected-asset))}
-        (slurp-body (handler (mr/request :get "/joodo.png"))))))
+        (do-handler handler (mr/request :get "/joodo.png")))))
 
   (it "calls the next handler when the asset is not found"
     (let [handler (wrap-asset-pipeline (fn [_] :next-handler-called) @config)]

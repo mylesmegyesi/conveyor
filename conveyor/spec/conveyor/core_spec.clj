@@ -4,17 +4,12 @@
             [conveyor.core :refer :all]
             [conveyor.config :refer :all]
             [conveyor.precompile :refer [precompile]]
+            [conveyor.file-utils :refer [slurp-or-read]]
             [ring.mock.request :as mr])
   (:import [java.io File]
            [org.apache.commons.io FileUtils]))
 
 (describe "conveyor.core"
-
-  (defn slurp-or-read [body]
-    (try
-      (slurp body)
-    (catch java.io.FileNotFoundException e
-      body)))
 
   (context "resource-directory-path"
 

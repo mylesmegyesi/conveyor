@@ -104,28 +104,16 @@
     file
     (read-resource-file file-path)))
 
-(defprotocol FileBody
-  (body-to-stream [this out])
-  (body-length [this]))
+(defn slurp-or-read [body]
+  (try
+    (slurp body)
+  (catch java.io.FileNotFoundException e
+    body)))
 
-(extend-protocol FileBody
-  String
-  (body-to-stream [this out]
+(defn body-to-stream [body out]
     (with-open [out out]
-      (doseq [c (.toCharArray this)]
+      (doseq [c (.toCharArray (slurp-or-read body))]
         (.write out (int c)))))
-
-  (body-length [this]
-    (count this))
-
-  File
-  (body-to-stream [this out]
-    (with-open [out out]
-      (doseq [c (.toCharArray (slurp this))]
-        (.write out (int c)))))
-
-  (body-length [this]
-    (.length this)))
 
 (defn write-file [f body]
   (body-to-stream body (FileOutputStream. (file f))))

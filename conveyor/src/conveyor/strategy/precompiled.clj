@@ -1,6 +1,7 @@
-(ns conveyor.finder.precompiled
+(ns conveyor.strategy.precompiled
   (:require [conveyor.file-utils :refer [file-input-stream get-extension replace-extension add-extension read-file file-join]]
-            [conveyor.finder.interface :refer [AssetFinder]]
+            [conveyor.strategy.interface :refer [Pipeline]]
+            [conveyor.strategy.util :refer :all]
             [conveyor.manifest :refer [read-manifest manifest-path]]))
 
 (defn- throw-not-precompiled [config path]
@@ -13,28 +14,34 @@
 (defn- read-file-in-output [{:keys [output-dir]} file-path]
   (file-input-stream (file-join output-dir file-path)))
 
-(defn- get-from-manifest [config path]
+(defn- -get-from-manifest [path config]
   (let [manifest (read-manifest config)]
     (get manifest path)))
 
-(defn find-asset [config path]
-  (when-let [asset (get-from-manifest config path)]
+(defn -find-asset [path config]
+  (when-let [asset (-get-from-manifest path config)]
     (assoc asset :body (read-file-in-output config (:logical-path asset)))))
 
-(deftype PrecompiledAssetFinder [config]
-  AssetFinder
-  (get-asset [this path]
-    (find-asset config path))
+(def find-asset
+  (-> -find-asset
+      wrap-remove-digest
+      wrap-suffix))
 
-  (get-static-asset [this path]
-   (find-asset config path))
+(def get-from-manifest
+  (-> -get-from-manifest
+      wrap-suffix))
+
+(deftype PrecompiledPipeline [config]
+  Pipeline
+  (get-asset [this path]
+    (find-asset path config))
 
   (get-logical-path [this path]
-    (:logical-path (get-from-manifest config path)))
+    (:logical-path (get-from-manifest path config)))
 
   (get-digest-path [this path]
-    (:digest-path (get-from-manifest config path)))
+    (:digest-path (get-from-manifest path config)))
 )
 
-(defn make-precompiled-asset-finder [config]
-  (PrecompiledAssetFinder. config))
+(defn make-precompiled-pipeline [config]
+  (PrecompiledPipeline. config))

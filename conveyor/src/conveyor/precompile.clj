@@ -1,9 +1,7 @@
 (ns conveyor.precompile
-  (:require [conveyor.core :refer [find-asset! pipeline pipeline-config]]
+  (:require [conveyor.core :refer [find-asset! pipeline pipeline-config get-path-prefixer-fn]]
             [conveyor.file-utils :refer [file-join ensure-directory-of-file write-file]]
-            [conveyor.finder.interface :refer :all]
-            [conveyor.manifest :refer [manifest-path]]
-            ))
+            [conveyor.manifest :refer [manifest-path]]))
 
 (defn- build-manifest [assets]
   (reduce
@@ -17,7 +15,7 @@
     assets))
 
 (defn- write-asset-path [body path]
-  (let [prefixed-path ((:path-prefixer (pipeline)) path)
+  (let [prefixed-path ((get-path-prefixer-fn (pipeline-config)) path)
         file-name (file-join (:output-dir (pipeline-config)) prefixed-path)]
     (ensure-directory-of-file file-name)
     (write-file file-name body)))
@@ -34,24 +32,7 @@
     (if digest-path (write-asset-path body digest-path)))
   assets)
 
-(defn add-found-paths [paths regex finder]
-  (let [matches (get-paths-from-regex finder regex)]
-    (if (empty? matches)
-      paths
-      (apply conj paths matches))))
-
-(defn filter-regex [paths]
-  (let [finder (:finder (pipeline))]
-    (reduce
-      (fn [paths path]
-        (if (string? path)
-          (conj paths path)
-          (add-found-paths paths path finder)))
-      #{}
-      paths)))
-
 (defn precompile [paths]
-  (let [filtered-paths (filter-regex paths)]
-    (-> (doall (map #(find-asset! %) filtered-paths))
-      (write-assets)
-      (write-manifest))))
+  (-> (flatten (doall (map #(find-asset! %) paths)))
+    (write-assets)
+    (write-manifest)))

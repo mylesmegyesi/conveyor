@@ -1,10 +1,12 @@
-(ns conveyor.finder.load-path
+(ns conveyor.strategy.runtime
   (:require [clojure.java.io :refer [file]]
             [clojure.string :refer [join replace-first] :as clj-str]
             [digest :refer [md5]]
             [conveyor.compile :refer [compile-asset]]
+            [conveyor.compress :refer [compress-asset]]
             [conveyor.file-utils :refer :all]
-            [conveyor.finder.interface :refer [AssetFinder RegexFinder]]))
+            [conveyor.strategy.util :refer :all]
+            [conveyor.strategy.interface :refer [Pipeline]]))
 
 (defn- format-asset-path [asset-path]
   (format "\"%s\"" asset-path))
@@ -100,7 +102,7 @@
       []
       potential-files)))
 
-(defn- find-file [config path]
+(defn- find-file [path config]
   (let [requested-extension (get-extension path)
         input-files (build-possible-input-files (:load-paths config))
         files-to-read (build-possible-files config path requested-extension)
@@ -115,30 +117,52 @@
          :extension (get-extension logical-path)
          :logical-path (replace-extension logical-path requested-extension)}))))
 
-(defn find-asset [config path]
-  (if-let [file (find-file config path)]
-    (let [{:keys [logical-path absolute-path]} file
-          body (read-file absolute-path)
-          asset (assoc file :body body)]
-      (if (:use-digest-path config)
-        (let [digest (md5 body)]
-          (-> asset
-            (assoc :digest digest)
-            (assoc :digest-path (add-extension
-                                  (str (remove-extension logical-path) "-" digest)
-                                  (get-extension logical-path)))))
+(defn return-static-file? [file requested-path {:keys [compress use-digest-path]}]
+  (and
+    (not (or compress use-digest-path))
+    (= (get-extension (:logical-path file)) (get-extension (:absolute-path file)))))
+
+(defn -find-asset [path config]
+  (if-let [file (find-file path config)]
+    (let [{:keys [logical-path absolute-path]} file]
+      (if (return-static-file? file path config)
+        (assoc file :body (file-input-stream absolute-path))
+        (assoc file :body (read-file absolute-path))))))
+
+(defn compile? [asset config]
+  (and (string? (:body asset)) (:pipeline-enabled config) (:compile config)))
+
+(defn compress? [config]
+  (and (:pipeline-enabled config) (:compress config)))
+
+(defn wrap-compile [handler]
+  (fn [path config]
+    (let [asset (handler path config)]
+      (if (compile? asset config)
+        (compile-asset config path asset)
         asset))))
 
-(defn find-static-asset [{:keys [compress use-digest-path load-paths]} path]
-  (when (not (or compress use-digest-path))
-    (let [possible-files (build-possible-input-files load-paths)
-          matched-files (match-files possible-files [{:relative-path path :logical-path path}])
-          {:keys [logical-path absolute-path] :as matched-file} (first matched-files)]
-      (when matched-file
-        {:absolute-path absolute-path
-         :extension (get-extension logical-path)
-         :logical-path logical-path
-         :body (file-input-stream absolute-path)}))))
+(defn wrap-compress [handler]
+  (fn [path config]
+    (let [asset (handler path config)]
+      (if (compress? config)
+        (compress-asset config path asset)
+        asset))))
+
+(defn add-digest [{:keys [body logical-path] :as asset}]
+  (let [digest (md5 body)]
+    (-> asset
+      (assoc :digest digest)
+      (assoc :digest-path (add-extension
+                            (str (remove-extension logical-path) "-" digest)
+                            (get-extension logical-path))))))
+
+(defn wrap-add-digest [handler]
+  (fn [path config]
+    (let [asset (handler path config)]
+      (if (and asset (:use-digest-path config))
+        (add-digest asset)
+        asset))))
 
 (defn all-possible-output [{:keys [load-paths] :as config}]
   (let [possible-input (build-possible-input-files load-paths)
@@ -156,28 +180,44 @@
       #{}
       possible-files)))
 
-(deftype LoadPathAssetFinder [config]
-  AssetFinder
+(defn regex? [path]
+  (= (re-pattern path) path))
+
+(defn wrap-regex [handler]
+  (fn [path config]
+    (if (regex? path)
+      (let [matches (find-regex-matches path config)]
+        (when (not (empty? matches))
+          (map #(handler % config) matches)))
+      (handler path config))))
+
+(def find-asset
+  (-> -find-asset
+      wrap-compile
+      wrap-compress
+      wrap-add-digest
+      wrap-remove-digest
+      wrap-suffix
+      wrap-regex))
+
+(def get-file
+  (-> find-file
+      wrap-suffix))
+
+(deftype RuntimePipeline [config]
+  Pipeline
 
   (get-asset [this path]
-    (find-asset config path))
-
-  (get-static-asset [this path]
-    (find-static-asset config path))
+    (find-asset path config))
 
   (get-logical-path [this path]
-    (when-let [file (find-file config path)]
+    (when-let [file (get-file path config)]
       (:logical-path file)))
 
   (get-digest-path [this path]
-    (:digest-path (find-asset config path)))
+    (:digest-path (find-asset path config)))
+)
 
-  RegexFinder
-
-  (get-paths-from-regex [this regex]
-    (find-regex-matches regex config))
-  )
-
-(defn make-load-path-asset-finder [config]
-  (LoadPathAssetFinder. config))
+(defn make-runtime-pipeline [config]
+  (RuntimePipeline. config))
 

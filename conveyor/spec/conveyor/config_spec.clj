@@ -6,6 +6,11 @@
 
   (describe "thread pipeline config"
 
+    (it "threads set-strategy"
+      (let [config (thread-pipeline-config
+                     (set-strategy :precompiled))]
+        (should= {:strategy :precompiled} config)))
+
     (it "threads add-compiler-config"
       (let [config (thread-pipeline-config
                      (add-compiler-config :my-compiler))]
@@ -51,11 +56,6 @@
                      (set-output-dir "output"))]
         (should= {:output-dir "output"} config)))
 
-    (it "threads set-asset-finder"
-      (let [config (thread-pipeline-config
-                     (set-asset-finder :my-finder))]
-        (should= {:asset-finder :my-finder} config)))
-
     (it "threads set-asset-host"
       (let [config (thread-pipeline-config
                      (set-asset-host "my-host/"))]
@@ -88,10 +88,10 @@
 
     (it "threads multiple setters"
       (let [config (thread-pipeline-config
-                     (set-asset-finder :my-finder)
+                     (set-strategy :precompiled)
                      (set-compile false)
                      (add-compressor-config :my-config))]
-        (should= {:asset-finder :my-finder
+        (should= {:strategy :precompiled
                   :compile false
                   :compressors [:my-config]} config)))
 

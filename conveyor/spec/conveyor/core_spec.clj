@@ -133,13 +133,13 @@
       (let [config (initialize-config {:manifest "some-other-manifest.edn"})]
         (should= "some-other-manifest.edn" (:manifest config))))
 
-    (it "configures the search strategy"
-      (let [config (initialize-config {:asset-finder :precompiled})]
-        (should= :precompiled (:asset-finder config))))
+    (it "configures the pipeline strategy"
+      (let [config (initialize-config {:strategy :runtime})]
+        (should= :runtime (:strategy config))))
 
-    (it "defaults the search strategy to load-path"
+    (it "defaults the pipeline strategy to runtime"
       (let [config (initialize-config {})]
-        (should= :load-path (:asset-finder config))))
+        (should= :runtime (:strategy config))))
 
     (it "sets compression to true"
       (let [config (initialize-config {:compress true})]
@@ -180,7 +180,7 @@
 
   (context "find-asset"
 
-    (defn- it-finds-assets [asset-finder prepare-asset]
+    (defn- it-finds-assets [strategy prepare-asset]
       (list
 
         (def alphanumeric "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
@@ -192,7 +192,7 @@
         (around [it]
           (let [config (thread-pipeline-config
                          (set-output-dir (get-output-dir 15)) ; the manifest file get's cached once it is read, so write to a different output directory each test
-                         (set-asset-finder asset-finder)
+                         (set-strategy strategy)
                          (add-directory-to-load-path "test_fixtures/public/javascripts"))]
             (with-pipeline-config config
               (try
@@ -473,22 +473,22 @@
 
         ))
 
-    (context "on the load path"
-      (it-finds-assets :load-path (fn [_] )))
+    (context "using the runtime pipeline"
+      (it-finds-assets :runtime (fn [_] )))
 
-    (context "in the output path"
+    (context "using the precompiled pipeline"
       (it-finds-assets :precompiled #(with-pipeline-config
-                                       (set-asset-finder (pipeline-config) :load-path)
+                                       (set-strategy (pipeline-config) :runtime)
                                        (precompile (flatten [%])))))
     )
 
   (context "asset-url"
 
-    (defn- it-finds-the-asset-url [asset-finder prepare-asset]
+    (defn- it-finds-the-asset-url [strategy prepare-asset]
 
       (list
         (with config (thread-pipeline-config
-                       (set-asset-finder asset-finder)
+                       (set-strategy strategy)
                        (set-output-dir "public")
                        (add-directory-to-load-path "test_fixtures/public/javascripts")))
         (around [it]
@@ -582,12 +582,12 @@
         )
       )
 
-    (context "on the load path"
-      (it-finds-the-asset-url :load-path (fn [_] )))
+    (context "using the runtime pipeline"
+      (it-finds-the-asset-url :runtime (fn [_] )))
 
-    (context "in the output path"
+    (context "using the precompiled pipeline"
       (it-finds-the-asset-url :precompiled #(with-pipeline-config
-                                              (set-asset-finder (pipeline-config) :load-path)
+                                              (set-strategy (pipeline-config) :runtime)
                                               (precompile (flatten [%])))))
 
     )

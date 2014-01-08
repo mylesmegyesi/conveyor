@@ -1,16 +1,16 @@
-(ns conveyor.finder.load-path-spec
+(ns conveyor.strategy.runtime-spec
   (:require [speclj.core :refer :all]
             [conveyor.core :refer :all]
             [conveyor.config :refer :all]
-            [conveyor.finder.load-path :refer [find-regex-matches]]))
+            [conveyor.strategy.runtime :refer [find-regex-matches]]))
 
 (defn test-compiler [config body filename input-extension output-extension]
   (str body "compiled with " filename ":" input-extension ":" output-extension))
 
-(describe "conveyor.finder.load-path"
+(describe "conveyor.pipeline.runtime"
 
   (with config (thread-pipeline-config
-                 (set-asset-finder :load-path)
+                 (set-strategy :runtime)
                  (add-directory-to-load-path "test_fixtures/public/javascripts")))
 
   (with fake1-compiler-config (add-compiler-config

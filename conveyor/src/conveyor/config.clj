@@ -22,6 +22,9 @@
 (defn set-input-extension [config extension]
   (assoc config :input-extension extension))
 
+(defn set-strategy [config strategy]
+  (assoc config :strategy strategy))
+
 (defn set-compiler [config compiler]
   (assoc config :compiler compiler))
 
@@ -53,9 +56,6 @@
 
 (defn set-output-dir [config path]
   (assoc config :output-dir path))
-
-(defn set-asset-finder [config strat]
-  (assoc config :asset-finder strat))
 
 (defn- normalize-asset-host [host]
   (when host

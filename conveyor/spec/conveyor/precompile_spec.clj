@@ -50,7 +50,7 @@
     (should= ".test2 { color: black; }\n" (slurp "test_output/test2.css")))
 
   (it "compiles files given a regex"
-    (precompile ["test1.js" #"test2.*" #".*1.precompiled" #"not-found-regex"])
+    (precompile ["test1.js" #"test2.*" #".*1.precompiled"])
     (should= "var test = 1;\n" (slurp "test_output/test1.js"))
     (should= ".test2 { color: black; }\n" (slurp "test_output/test2.css"))
     (should= "var test = 1;\n" (slurp "test_output/test1.precompiled")))

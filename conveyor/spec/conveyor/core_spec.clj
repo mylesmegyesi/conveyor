@@ -5,7 +5,7 @@
             [conveyor.config :refer :all]
             [conveyor.precompile :refer [precompile]]
             [ring.mock.request :as mr])
-  (:import [java.io FileInputStream]
+  (:import [java.io File]
            [org.apache.commons.io FileUtils]))
 
 (describe "conveyor.core"
@@ -205,10 +205,10 @@
           (let [found-asset (find-asset "test1.js")]
             (should= "var test = 1;\n" (slurp-or-read (:body found-asset)))))
 
-        (it "returns a static file as an input stream"
+        (it "returns a static file as a file"
           (prepare-asset "test1.js")
           (let [found-asset (find-asset "test1.js")]
-            (should= FileInputStream (.getClass (:body found-asset)))))
+            (should= File (.getClass (:body found-asset)))))
 
         (it "returns the logical path"
           (prepare-asset "test1.js")

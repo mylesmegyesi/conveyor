@@ -2,7 +2,7 @@
   (:require [speclj.core :refer :all]
             [conveyor.core :refer :all]
             [conveyor.config :refer :all])
-  (:import [java.io FileInputStream]))
+  (:import [java.io File]))
 
 (describe "conveyor.pipeline.precompiled"
 
@@ -16,10 +16,10 @@
       (let [found-asset (find-asset "test1.js")]
         (should= "test1.js" (:logical-path found-asset)))))
 
-  (it "returns the body as an input stream"
+  (it "returns the body as a file"
     (with-pipeline-config @config
       (let [found-asset (find-asset "test1.js")]
-        (should= FileInputStream (type (:body found-asset))))))
+        (should= File (type (:body found-asset))))))
 
   (it "finds an asset that has a dot in the name"
     (with-pipeline-config @config

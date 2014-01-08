@@ -1,5 +1,5 @@
 (ns conveyor.strategy.runtime
-  (:require [clojure.java.io :refer [file]]
+  (:require [clojure.java.io :refer [as-file]]
             [clojure.string :refer [join replace-first] :as clj-str]
             [digest :refer [md5]]
             [conveyor.compile :refer [compile-asset]]
@@ -126,7 +126,7 @@
   (if-let [file (find-file path config)]
     (let [{:keys [logical-path absolute-path]} file]
       (if (return-static-file? file path config)
-        (assoc file :body (file-input-stream absolute-path))
+        (assoc file :body (as-file absolute-path))
         (assoc file :body (read-file absolute-path))))))
 
 (defn compile? [asset config]

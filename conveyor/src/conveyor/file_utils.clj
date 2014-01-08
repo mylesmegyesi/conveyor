@@ -3,7 +3,7 @@
             [clojure.string :refer [replace-first]])
   (:import [org.apache.commons.io FilenameUtils FileUtils]
            [java.net MalformedURLException JarURLConnection URL]
-           [java.io FileNotFoundException FileOutputStream FileInputStream]))
+           [java.io FileNotFoundException FileOutputStream File]))
 
 (defn remove-extension [file-path]
   (FilenameUtils/removeExtension file-path))
@@ -118,17 +118,14 @@
   (body-length [this]
     (count this))
 
-  FileInputStream
+  File
   (body-to-stream [this out]
     (with-open [out out]
-      (doseq [c (.toCharArray (read-stream this))]
+      (doseq [c (.toCharArray (slurp this))]
         (.write out (int c)))))
 
   (body-length [this]
-    (.size (.getChannel this))))
+    (.length this)))
 
 (defn write-file [f body]
   (body-to-stream body (FileOutputStream. (file f))))
-
-(defn file-input-stream [path]
-  (FileInputStream. (file path)))

@@ -1,5 +1,6 @@
 (ns conveyor.strategy.precompiled
-  (:require [conveyor.file-utils :refer [file-input-stream get-extension replace-extension add-extension read-file file-join]]
+  (:require [clojure.java.io :refer [as-file]]
+            [conveyor.file-utils :refer [get-extension replace-extension add-extension read-file file-join]]
             [conveyor.strategy.interface :refer [Pipeline]]
             [conveyor.strategy.util :refer :all]
             [conveyor.manifest :refer [read-manifest manifest-path]]))
@@ -12,7 +13,7 @@
               (manifest-path config)))))
 
 (defn- read-file-in-output [{:keys [output-dir]} file-path]
-  (file-input-stream (file-join output-dir file-path)))
+  (as-file (file-join output-dir file-path)))
 
 (defn- -get-from-manifest [path config]
   (let [manifest (read-manifest config)]

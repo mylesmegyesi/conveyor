@@ -47,15 +47,14 @@
       possible-files)
     [path]))
 
-(defn find-regex-matches [paths]
-  (let [possible-files (all-possible-output (pipeline-config))]
-    (-> (map #(find-matches % possible-files) paths)
-        (flatten)
-        (set))))
+(defn find-regex-matches [paths possible-files]
+  (-> (map #(find-matches % possible-files) paths)
+      (flatten)
+      (set)))
 
 (defn filter-regex [paths]
   (if (some regex? paths)
-    (find-regex-matches paths)
+    (find-regex-matches paths (all-possible-output (pipeline-config)))
     paths))
 
 (defn precompile [paths]

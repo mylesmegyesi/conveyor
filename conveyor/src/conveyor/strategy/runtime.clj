@@ -79,9 +79,8 @@
     (let [without-ext (remove-extension file-path)]
       (reduce
         (fn [paths extension]
-          (-> paths
-            (conj {:relative-path (add-extension without-ext extension)
-                         :logical-path (build-logical-path without-ext extension)})))
+          (conj paths {:relative-path (add-extension without-ext extension)
+                       :logical-path (build-logical-path without-ext extension)}))
         paths
         extensions))))
 

@@ -50,20 +50,18 @@
     (should= ".test2 { color: black; }\n" (slurp "test_output/test2.css")))
 
   (it "returns a set of paths given a file-extension regex"
-    (let [paths (find-regex-matches [#".*.js"])]
-      (should= #{"test8.js"
-                 "test7/index.js"
-                 "test8/index.js"
-                 "md5_test.js"
-                 "test.6.js"
-                 "test1.js"} paths)))
+    (let [input (map (fn [x] {:relative-path x}) ["js.css" "test1.js" "another/test.js" "test.1.js"])
+          paths (find-regex-matches [#".*.js"] input)]
+      (should= #{"test1.js"
+                 "another/test.js"
+                 "test.1.js"} paths)))
 
   (it "returns a set of paths given a file-name regex"
-    (let [paths (find-regex-matches [#"test8.*"])]
-      (should= #{"test8.js"
-                 "test8/index.js"
-                 "test8/index.precompiled"
-                 "test8.precompiled"} paths)))
+    (let [input (map (fn [x] {:relative-path x}) ["this.js" "test.js" "test.precompiled" "test/index.fake"])
+          paths (find-regex-matches [#"test.*"] input)]
+      (should= #{"test.js"
+                 "test.precompiled"
+                 "test/index.fake"} paths)))
 
   (it "compiles files given a regex"
     (precompile ["test1.js" #"test2.*" #".*1.precompiled"])

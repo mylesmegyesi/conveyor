@@ -440,32 +440,6 @@
                                       (add-input-extension "coffee")
                                       (add-output-extension "js"))))
 
-        (context "index"
-          (tags :index)
-        (it "finds an index file"
-          (with-pipeline-config @coffeescript-config
-            (prepare-asset "test6.js")
-            (let [asset (find-asset "test6.js")]
-              (should= "var index = 1;\n" (slurp-or-read (:body asset)))
-              (should= "test6.js" (:logical-path asset))
-              (should= "/test6.js" (asset-url "test6.js")))))
-
-        (it "finds an index file with dots in the directory name"
-          (with-pipeline-config @coffeescript-config
-            (prepare-asset "test.6.js")
-            (let [asset (find-asset "test.6.js")]
-              (should= "var index6 = 1;\n" (slurp-or-read (:body asset)))
-              (should= "test.6.js" (:logical-path asset))
-              (should= "/test.6.js" (asset-url "test.6.js")))))
-
-        (it "finds an index file with a matching output extension"
-          (with-pipeline-config @coffeescript-config
-            (prepare-asset "test7.js")
-            (let [asset (find-asset "test7.js")]
-              (should= "var test7 = 1;\n" (slurp-or-read (:body asset)))
-              (should= "test7.js" (:logical-path asset))
-              (should= "/test7.js" (asset-url "test7.js"))))))
-
         ))
 
     (context "using the runtime pipeline"

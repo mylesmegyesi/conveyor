@@ -51,13 +51,11 @@
 
   (it "returns a set of paths given a file-extension regex"
     (let [paths (find-regex-matches [#".*.js"])]
-      (should= #{"md5_test/index.js"
-                 "test8.js"
+      (should= #{"test8.js"
                  "test7/index.js"
                  "test8/index.js"
                  "md5_test.js"
-                 "test1/index.js"
-                 "test.6/index.js"
+                 "test.6.js"
                  "test1.js"} paths)))
 
   (it "returns a set of paths given a file-name regex"

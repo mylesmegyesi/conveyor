@@ -80,16 +80,10 @@
       (reduce
         (fn [paths extension]
           (-> paths
-            (conj {:relative-path (add-extension file-path extension)
-                   :logical-path (build-logical-path file-path extension)})
-            (as-> paths
-              (conj paths {:relative-path (add-extension without-ext extension)
-                           :logical-path (build-logical-path without-ext extension)}))))
+            (conj {:relative-path (add-extension without-ext extension)
+                         :logical-path (build-logical-path without-ext extension)})))
         paths
         extensions))))
-
-(defn- index-file [paths file-path extensions]
-  (files-with-compiler-extensions paths (str (remove-extension file-path) "/index") extensions (fn [path extension] (replace-extension file-path extension))))
 
 (defn requested-file [paths file-path]
   (if (empty? (get-extension file-path))
@@ -126,8 +120,7 @@
     (distinct
       (-> []
         (requested-file path)
-        (files-with-compiler-extensions path extensions)
-        (index-file path extensions)))))
+        (files-with-compiler-extensions path extensions)))))
 
 (defn- build-possible-input-files [load-paths]
   (reduce

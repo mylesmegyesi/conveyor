@@ -72,15 +72,6 @@
           "Found multiple compilers to handle input extension \"markdown\" and output extension \"html\""
           (find-asset "multiple_outputs.html")))))
 
-  (it "throws an exception if a normal file and index file are both found"
-    (let [base-path (directory-path "test_fixtures/public/javascripts")]
-      (with-pipeline-config @coffeescript-config
-        (should-throw
-          Exception (format "Search for \"test8\" returned multiple results: \"%s\", \"%s\""
-                            (str base-path "/test8.js")
-                            (str base-path "/test8/index.js"))
-          (find-asset "test8")))))
-
   (it "finds assets using compiler extensions when compile is disabled"
     (with-pipeline-config (set-compile @fake1-compiler-config false)
       (let [asset (find-asset "test3.fake1")]

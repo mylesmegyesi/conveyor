@@ -156,6 +156,12 @@
       []
       potential-files)))
 
+(defn all-possible-output [{:keys [load-paths] :as config}]
+  (let [possible-input (build-possible-input-files load-paths)
+        possible-paths (map :relative-path possible-input)
+        possible-output (map #(build-possible-files config % (get-extension %)) possible-paths)]
+    (flatten possible-output)))
+
 (defn- find-file [path config]
   (let [requested-extension (get-extension path)
         input-files (build-possible-input-files (:load-paths config))
@@ -218,41 +224,13 @@
         (add-digest asset)
         asset))))
 
-(defn all-possible-output [{:keys [load-paths] :as config}]
-  (let [possible-input (build-possible-input-files load-paths)
-        possible-paths (map :relative-path possible-input)
-        possible-output (map #(build-possible-files config % (get-extension %)) possible-paths)]
-    (flatten possible-output)))
-
-(defn find-regex-matches [regex config]
-  (let [possible-files (all-possible-output config)]
-    (reduce
-      (fn [files {:keys [relative-path]}]
-        (if (re-matches regex relative-path)
-          (conj files relative-path)
-          files))
-      #{}
-      possible-files)))
-
-(defn regex? [path]
-  (= (re-pattern path) path))
-
-(defn wrap-regex [handler]
-  (fn [path config]
-    (if (regex? path)
-      (let [matches (find-regex-matches path config)]
-        (when (not (empty? matches))
-          (map #(handler % config) matches)))
-      (handler path config))))
-
 (def find-asset
   (-> -find-asset
       wrap-compile
       wrap-compress
       wrap-add-digest
       wrap-remove-digest
-      wrap-suffix
-      wrap-regex))
+      wrap-suffix))
 
 (def get-file
   (-> find-file

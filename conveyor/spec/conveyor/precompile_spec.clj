@@ -49,6 +49,24 @@
     (should= "var test = 1;\n" (slurp "test_output/test1.js"))
     (should= ".test2 { color: black; }\n" (slurp "test_output/test2.css")))
 
+  (it "returns a set of paths given a file-extension regex"
+    (let [paths (find-regex-matches [#".*.js"])]
+      (should= #{"md5_test/index.js"
+                 "test8.js"
+                 "test7/index.js"
+                 "test8/index.js"
+                 "md5_test.js"
+                 "test1/index.js"
+                 "test.6/index.js"
+                 "test1.js"} paths)))
+
+  (it "returns a set of paths given a file-name regex"
+    (let [paths (find-regex-matches [#"test8.*"])]
+      (should= #{"test8.js"
+                 "test8/index.js"
+                 "test8/index.precompiled"
+                 "test8.precompiled"} paths)))
+
   (it "compiles files given a regex"
     (precompile ["test1.js" #"test2.*" #".*1.precompiled"])
     (should= "var test = 1;\n" (slurp "test_output/test1.js"))

@@ -170,10 +170,18 @@
          :extension (get-extension logical-path)
          :logical-path (replace-extension logical-path requested-extension)}))))
 
-(defn return-static-file? [file requested-path {:keys [compress use-digest-path]}]
-  (and
-    (not (or compress use-digest-path))
-    (= (get-extension (:logical-path file)) (get-extension (:absolute-path file)))))
+(defn compile? [config]
+  (and (:pipeline-enabled config) (:compile config)))
+
+(defn compress? [config]
+  (and (:pipeline-enabled config) (:compress config)))
+
+(defn return-static-file? [file requested-path {:keys [compilers] :as config}]
+  (not (or
+    (and (compile? config)
+         (not (empty? (compilers-for-extension (:compilers config) (:extension file) (get-extension requested-path)))))
+    (and (compress? config)
+         (compressor-for-extension config (:extension file))))))
 
 (defn -find-asset [path config]
   (if-let [file (find-file path config)]
@@ -182,16 +190,10 @@
         (assoc file :body (as-file absolute-path))
         (assoc file :body (read-file absolute-path))))))
 
-(defn compile? [asset config]
-  (and (string? (:body asset)) (:pipeline-enabled config) (:compile config)))
-
-(defn compress? [config]
-  (and (:pipeline-enabled config) (:compress config)))
-
 (defn wrap-compile [handler]
   (fn [path config]
     (let [asset (handler path config)]
-      (if (compile? asset config)
+      (if (compile? config)
         (compile-asset config path asset)
         asset))))
 

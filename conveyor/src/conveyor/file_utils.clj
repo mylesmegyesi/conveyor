@@ -126,3 +126,28 @@
 
 (defn write-file [f body]
   (body-to-stream body (FileOutputStream. (file f))))
+
+(defn -build-possible-input-files [load-paths]
+  (reduce
+    (fn [files load-path]
+      (reduce
+        (fn [files file]
+          (conj files
+                {:absolute-path file
+                 :relative-path (replace-first file (str load-path "/") "")}))
+        files
+        (list-files load-path)))
+    []
+    load-paths))
+
+(declare ^:dynamic *file-cache*)
+
+(defmacro with-file-cache [load-paths & body]
+  `(binding [*file-cache* (-build-possible-input-files ~load-paths)]
+    ~@body))
+
+(defn build-possible-input-files [load-paths]
+  (if (bound? #'*file-cache*)
+    *file-cache*
+    (-build-possible-input-files load-paths)))
+

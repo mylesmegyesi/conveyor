@@ -1,6 +1,6 @@
 (ns conveyor.precompile
   (:require [conveyor.core :refer [find-asset! pipeline pipeline-config]]
-            [conveyor.file-utils :refer [file-join ensure-directory-of-file write-file]]
+            [conveyor.file-utils :refer [file-join ensure-directory-of-file write-file with-file-cache]]
             [conveyor.strategy.runtime :refer [all-possible-output]]
             [conveyor.manifest :refer [manifest-path]]))
 
@@ -58,7 +58,8 @@
     paths))
 
 (defn precompile [paths]
-  (let [filtered-paths (filter-regex paths)]
-    (-> (flatten (doall (map #(find-asset! %) filtered-paths)))
-      (write-assets)
-      (write-manifest))))
+  (with-file-cache (:load-paths (pipeline-config))
+    (let [filtered-paths (filter-regex paths)]
+      (-> (flatten (doall (map #(find-asset! %) filtered-paths)))
+        (write-assets)
+        (write-manifest)))))

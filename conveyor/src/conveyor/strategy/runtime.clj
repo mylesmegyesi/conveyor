@@ -121,19 +121,6 @@
         (requested-file path)
         (files-with-compiler-extensions path extensions)))))
 
-(defn- build-possible-input-files [load-paths]
-  (reduce
-    (fn [files load-path]
-      (reduce
-        (fn [files file]
-          (conj files
-                {:absolute-path file
-                 :relative-path (replace-first file (str load-path "/") "")}))
-        files
-        (list-files load-path)))
-    []
-    load-paths))
-
 (defn- match-files [input-files potential-files]
   (distinct
     (reduce

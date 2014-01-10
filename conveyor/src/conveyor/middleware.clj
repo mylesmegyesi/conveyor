@@ -1,6 +1,7 @@
 (ns conveyor.middleware
   (:require [clojure.string :refer [replace-first] :as clj-str]
             [conveyor.core  :refer [bind-config build-pipeline find-asset initialize-config]]
+            [conveyor.file-utils :refer [with-file-cache]]
             [pantomime.mime :refer [mime-type-of]]))
 
 (defn- build-asset-request?-fn [config]

@@ -169,40 +169,6 @@
          :extension (get-extension logical-path)
          :logical-path (replace-extension logical-path requested-extension)}))))
 
-(defn compile? [config]
-  (and (:pipeline-enabled config) (:compile config)))
-
-(defn compress? [config]
-  (and (:pipeline-enabled config) (:compress config)))
-
-(defn return-static-file? [file requested-path {:keys [compilers] :as config}]
-  (not (or
-    (and (compile? config)
-         (not (empty? (compilers-for-extension (:compilers config) (:extension file) (get-extension requested-path)))))
-    (and (compress? config)
-         (compressor-for-extension config (:extension file))))))
-
-(defn -find-asset [path config]
-  (if-let [file (find-file path config)]
-    (let [{:keys [logical-path absolute-path]} file]
-      (if (return-static-file? file path config)
-        (assoc file :body (as-file absolute-path))
-        (assoc file :body (read-file absolute-path))))))
-
-(defn wrap-compile [handler]
-  (fn [path config]
-    (let [asset (handler path config)]
-      (if (compile? config)
-        (compile-asset config path asset)
-        asset))))
-
-(defn wrap-compress [handler]
-  (fn [path config]
-    (let [asset (handler path config)]
-      (if (compress? config)
-        (compress-asset config path asset)
-        asset))))
-
 (defn add-digest [{:keys [body logical-path] :as asset}]
   (let [digest (md5 body)]
     (-> asset
@@ -211,24 +177,57 @@
                             (str (remove-extension logical-path) "-" digest)
                             (get-extension logical-path))))))
 
-(defn wrap-add-digest [handler]
-  (fn [path config]
-    (let [asset (handler path config)]
-      (if (and asset (:use-digest-path config))
-        (add-digest asset)
-        asset))))
+(defn compile? [{:keys [extension logical-path]} {:keys [compilers] :as config}]
+  (and
+    (:pipeline-enabled config)
+    (:compile config)
+    (not (empty? (compilers-for-extension compilers extension (get-extension logical-path))))))
 
-(def find-asset
-  (-> -find-asset
-      wrap-compile
-      wrap-compress
-      wrap-add-digest
-      wrap-remove-digest
-      wrap-suffix))
+(defn compress? [{:keys [extension]} config]
+  (and
+    (:pipeline-enabled config)
+    (:compress config)
+    (compressor-for-extension config extension)))
+
+(defn apply-compile [handlers file config]
+  (if (compile? file config)
+    (conj handlers
+      (fn [asset]
+        (compile-asset config (:logical-path file) asset)))
+    handlers))
+
+(defn apply-compress [handlers file config]
+  (if (compress? file config)
+    (conj handlers
+      (fn [asset]
+        (compress-asset config (:logical-path file) asset)))
+    handlers))
+
+(defn apply-digest-path [handlers config]
+  (if (:use-digest-path config)
+    (conj handlers
+      (fn [asset]
+        (add-digest asset)))
+    handlers))
+
+(defn build-pipeline [file config]
+  (-> []
+    (apply-compile file config)
+    (apply-compress file config)
+    (apply-digest-path config)))
 
 (def get-file
   (-> find-file
+      wrap-remove-digest
       wrap-suffix))
+
+(defn find-asset [path config]
+  (when-let [file (get-file path config)]
+    (let [{:keys [absolute-path]} file]
+      (let [pipeline (build-pipeline file config)]
+        (if (empty? pipeline)
+          (assoc file :body (as-file absolute-path))
+          ((apply comp pipeline) (assoc file :body (read-file absolute-path))))))))
 
 (deftype RuntimePipeline [config]
   Pipeline

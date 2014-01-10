@@ -15,7 +15,10 @@
   (FilenameUtils/getExtension file-path))
 
 (defn replace-extension [file-path extension]
-  (add-extension (remove-extension file-path) extension))
+  (let [path (remove-extension file-path)]
+    (if (empty? extension)
+      path
+      (add-extension path extension))))
 
 (defn- jar-directory? [dir]
   (try

@@ -205,16 +205,13 @@
 
 (defn apply-digest-path [handlers config]
   (if (:use-digest-path config)
-    (conj handlers
-      (fn [asset]
-        (add-digest asset)))
+    (conj handlers add-digest)
     handlers))
 
 (defn build-pipeline [file config]
   (-> []
     (apply-compile file config)
-    (apply-compress file config)
-    (apply-digest-path config)))
+    (apply-compress file config)))
 
 (def get-file
   (-> find-file
@@ -222,12 +219,14 @@
       wrap-suffix))
 
 (defn find-asset [path config]
-  (when-let [file (get-file path config)]
-    (let [{:keys [absolute-path]} file]
-      (let [pipeline (build-pipeline file config)]
-        (if (empty? pipeline)
-          (assoc file :body (as-file absolute-path))
-          ((apply comp pipeline) (assoc file :body (read-file absolute-path))))))))
+  (when-let [{:keys [absolute-path] :as file} (get-file path config)]
+    (let [pipeline (build-pipeline file config)
+          body (if (seq pipeline) (read-file absolute-path) (as-file absolute-path))
+          asset (assoc file :body body)
+          pipeline (apply-digest-path pipeline config)]
+      (if (seq pipeline)
+        ((apply comp pipeline) asset)
+        asset))))
 
 (deftype RuntimePipeline [config]
   Pipeline

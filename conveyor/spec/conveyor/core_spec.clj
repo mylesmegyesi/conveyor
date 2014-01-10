@@ -336,7 +336,7 @@
               (should= "test3.fake-output" (:logical-path asset))
               (should= "/test3.fake-output" (asset-url "test3.fake-output")))))
 
-        (it "does not compile a static file"
+        (it "returns a file with no compiler for the extension as a static file"
           (with-pipeline-config @test-compiler-config
             (prepare-asset "test1.js")
             (let [asset (find-asset "test1.js")]

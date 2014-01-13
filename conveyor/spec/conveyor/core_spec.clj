@@ -4,7 +4,7 @@
             [conveyor.core :refer :all]
             [conveyor.config :refer :all]
             [conveyor.precompile :refer [precompile]]
-            [conveyor.file-utils :refer [slurp-or-read]]
+            [conveyor.file-utils :refer [body-to-string]]
             [ring.mock.request :as mr])
   (:import [java.io File]
            [org.apache.commons.io FileUtils]))
@@ -15,7 +15,7 @@
 
     (it "builds the full path to a jar resource directory"
       (let [full-path (resource-directory-path "stylesheets" "test1.css")]
-        (should= ".test1 { color: white; }\n" (slurp-or-read (str full-path "/test1.css")))))
+        (should= ".test1 { color: white; }\n" (slurp (str full-path "/test1.css")))))
 
     (it "returns nil when the directory does not exist"
       (should-be-nil (resource-directory-path "non_existant_dir" "test1.css")))
@@ -29,7 +29,7 @@
 
     (it "builds the full path to a directory"
       (let [full-path (directory-path "test_fixtures/public/stylesheets")]
-        (should= ".test2 { color: black; }\n" (slurp-or-read (str full-path "/test2.css")))))
+        (should= ".test2 { color: black; }\n" (slurp (str full-path "/test2.css")))))
 
     (it "returns nil when the directory does not exist"
       (should-be-nil (directory-path "non_existant_dir")))
@@ -198,7 +198,7 @@
         (it "finds an asset and returns the body"
           (prepare-asset "test1.js")
           (let [found-asset (find-asset "test1.js")]
-            (should= "var test = 1;\n" (slurp-or-read (:body found-asset)))))
+            (should= "var test = 1;\n" (body-to-string (:body found-asset)))))
 
         (it "returns a static file as a file"
           (prepare-asset "test1.js")
@@ -210,7 +210,7 @@
           (let [asset (find-asset "test1.js")]
             (should= "test1.js" (:logical-path asset))
             (should= "/test1.js" (asset-url "test1.js"))
-            (should= (slurp-or-read (:body asset)) (slurp-or-read (:body (find-asset (:logical-path asset)))))))
+            (should= (body-to-string (:body asset)) (body-to-string (:body (find-asset (:logical-path asset)))))))
 
         (it "does not return the digest and digest path"
           (prepare-asset "test1.js")
@@ -234,7 +234,7 @@
           (with-pipeline-config (add-directory-to-load-path (pipeline-config) "test_fixtures/public/stylesheets")
             (prepare-asset "test2.css")
             (let [asset (find-asset "test2.css")]
-              (should= ".test2 { color: black; }\n" (slurp-or-read (:body asset)))
+              (should= ".test2 { color: black; }\n" (body-to-string (:body asset)))
               (should= "test2.css" (:logical-path asset))
               (should= "/test2.css" (asset-url "test2.css")))))
 
@@ -242,7 +242,7 @@
           (with-pipeline-config (add-resource-directory-to-load-path (pipeline-config) "stylesheets" "test1.css")
             (prepare-asset "test1.css")
             (let [asset (find-asset "test1.css")]
-              (should= ".test1 { color: white; }\n" (slurp-or-read (:body asset)))
+              (should= ".test1 { color: white; }\n" (body-to-string (:body asset)))
               (should= "test1.css" (:logical-path asset))
               (should= "/test1.css" (asset-url "test1.css")))))
 
@@ -268,7 +268,7 @@
           (with-pipeline-config @fake-compiler-config
             (prepare-asset "test2.fake-output")
             (let [asset (find-asset "test2.fake-output")]
-              (should= "Some fake thing\n" (slurp-or-read (:body asset)))
+              (should= "Some fake thing\n" (body-to-string (:body asset)))
               (should= "test2.fake-output" (:logical-path asset))
               (should= "/test2.fake-output" (asset-url "test2.fake-output")))))
 
@@ -276,7 +276,7 @@
           (with-pipeline-config @fake-compiler-config
             (prepare-asset "test2.fake-output")
             (let [asset (find-asset "test2.fake-output?#wat")]
-              (should= "Some fake thing\n" (slurp-or-read (:body asset)))
+              (should= "Some fake thing\n" (body-to-string (:body asset)))
               (should= "test2.fake-output?#wat" (:logical-path asset))
               (should= "/test2.fake-output?#wat" (asset-url "test2.fake-output?#wat")))))
 
@@ -284,7 +284,7 @@
           (with-pipeline-config @fake-compiler-config
             (prepare-asset "test.2.fake-output")
             (let [asset (find-asset "test.2.fake-output")]
-              (should= "Some fake thing with dots\n" (slurp-or-read (:body asset)))
+              (should= "Some fake thing with dots\n" (body-to-string (:body asset)))
               (should= "test.2.fake-output" (:logical-path asset))
               (should= "/test.2.fake-output" (asset-url "test.2.fake-output")))))
 
@@ -292,7 +292,7 @@
           (with-pipeline-config @fake-compiler-config
             (prepare-asset "test.2.fake")
             (let [asset (find-asset "test.2.fake")]
-              (should= "Some fake thing with dots\n" (slurp-or-read (:body asset)))
+              (should= "Some fake thing with dots\n" (body-to-string (:body asset)))
               (should= "test.2.fake" (:logical-path asset))
               (should= "/test.2.fake" (asset-url "test.2.fake")))))
 
@@ -312,7 +312,7 @@
           (with-pipeline-config @fake1-compiler-config
             (prepare-asset "test3.fake-output")
             (let [asset (find-asset "test3.fake-output")]
-              (should= "Some fake thing1\n" (slurp-or-read (:body asset)))
+              (should= "Some fake thing1\n" (body-to-string (:body asset)))
               (should= "test3.fake-output" (:logical-path asset))
               (should= "/test3.fake-output" (asset-url "test3.fake-output")))))
 
@@ -332,7 +332,7 @@
             (prepare-asset "test3.fake-output")
             (let [base-path (directory-path "test_fixtures/public/javascripts")
                   asset (find-asset "test3.fake-output")]
-              (should= (format "Some fake thing1\ncompiled with %s:fake1:fake-output" (str base-path "/test3.fake1")) (slurp-or-read (:body asset)))
+              (should= (format "Some fake thing1\ncompiled with %s:fake1:fake-output" (str base-path "/test3.fake1")) (body-to-string (:body asset)))
               (should= "test3.fake-output" (:logical-path asset))
               (should= "/test3.fake-output" (asset-url "test3.fake-output")))))
 
@@ -340,7 +340,7 @@
           (with-pipeline-config @test-compiler-config
             (prepare-asset "test1.js")
             (let [asset (find-asset "test1.js")]
-              (should= "var test = 1;\n" (slurp-or-read (:body asset)))
+              (should= "var test = 1;\n" (body-to-string (:body asset)))
               (should= "test1.js" (:logical-path asset))
               (should= "/test1.js" (asset-url "test1.js")))))
 
@@ -358,25 +358,25 @@
           (with-pipeline-config @test-compressor-config
             (prepare-asset "test1.js")
             (let [asset (find-asset "test1.js")]
-              (should= "var test = 1;\ncompressed" (slurp-or-read (:body asset))))))
+              (should= "var test = 1;\ncompressed" (body-to-string (:body asset))))))
 
         (it "only uses the compresses that matches the extension"
           (with-pipeline-config @test-compressor-config
             (prepare-asset "test2.fake")
             (let [asset (find-asset "test2.fake")]
-              (should= "Some fake thing\n" (slurp-or-read (:body asset))))))
+              (should= "Some fake thing\n" (body-to-string (:body asset))))))
 
         (it "does not compress the asset when disabled"
           (with-pipeline-config (set-compression @test-compressor-config false)
             (prepare-asset "test1.js")
             (let [asset (find-asset "test1.js")]
-              (should= "var test = 1;\n" (slurp-or-read (:body asset))))))
+              (should= "var test = 1;\n" (body-to-string (:body asset))))))
 
         (it "does not compress the asset when the pipeline is disabled"
           (with-pipeline-config (set-pipeline-enabled @test-compressor-config false)
             (prepare-asset "test1.js")
             (let [asset (find-asset "test1.js")]
-              (should= "var test = 1;\n" (slurp-or-read (:body asset))))))
+              (should= "var test = 1;\n" (body-to-string (:body asset))))))
 
         (it "a compiler with multiple extensions"
           (with-pipeline-config (add-compiler-config
@@ -400,10 +400,10 @@
             (prepare-asset ["multiple_outputs.html" "multiple_outputs.txt"])
             (let [html-asset (find-asset "multiple_outputs.html")
                   txt-asset (find-asset "multiple_outputs.txt")]
-              (should= "Multiple outputs\n" (slurp-or-read (:body html-asset)))
+              (should= "Multiple outputs\n" (body-to-string (:body html-asset)))
               (should= "multiple_outputs.html" (:logical-path html-asset))
               (should= "/multiple_outputs.html" (asset-url "multiple_outputs.html"))
-              (should= "Multiple outputs\n" (slurp-or-read (:body txt-asset)))
+              (should= "Multiple outputs\n" (body-to-string (:body txt-asset)))
               (should= "multiple_outputs.txt" (:logical-path txt-asset))
               (should= "/multiple_outputs.txt" (asset-url "multiple_outputs.txt")))))
 
@@ -422,10 +422,10 @@
             (prepare-asset ["multiple_outputs.html" "multiple_outputs.txt"])
             (let [html-asset (find-asset "multiple_outputs.html")
                   txt-asset (find-asset "multiple_outputs.txt")]
-            (should= "Multiple outputs\n" (slurp-or-read (:body html-asset)))
+            (should= "Multiple outputs\n" (body-to-string (:body html-asset)))
             (should= "multiple_outputs.html" (:logical-path html-asset))
             (should= "/multiple_outputs.html" (asset-url "multiple_outputs.html"))
-            (should= "Multiple outputs\n" (slurp-or-read (:body txt-asset)))
+            (should= "Multiple outputs\n" (body-to-string (:body txt-asset)))
             (should= "multiple_outputs.txt" (:logical-path txt-asset))
             (should= "/multiple_outputs.txt" (asset-url "multiple_outputs.txt")))))
 

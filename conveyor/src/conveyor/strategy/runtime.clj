@@ -1,6 +1,5 @@
 (ns conveyor.strategy.runtime
-  (:require [clojure.java.io :refer [as-file]]
-            [clojure.string :refer [join replace-first] :as clj-str]
+  (:require [clojure.string :refer [join replace-first] :as clj-str]
             [digest :refer [md5]]
             [conveyor.file-utils :refer :all]
             [conveyor.strategy.util :refer :all]
@@ -208,7 +207,7 @@
 (defn find-asset [path config]
   (when-let [{:keys [absolute-path] :as file} (get-file path config)]
     (let [pipeline (build-pipeline file config)
-          body (if (seq pipeline) (read-file absolute-path) (as-file absolute-path))
+          body (if (seq pipeline) (read-file absolute-path) (make-file absolute-path))
           asset (assoc file :body body)
           pipeline (apply-digest-path pipeline config)]
       (if (seq pipeline)

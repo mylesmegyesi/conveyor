@@ -1,9 +1,10 @@
 (ns conveyor.file-utils
-  (:require [clojure.java.io :refer [file as-file input-stream as-url copy output-stream]]
-            [clojure.string :refer [replace-first]])
+  (:require [clojure.java.io :refer [file as-file input-stream as-url copy output-stream resource]]
+            [clojure.string :refer [replace-first]]
+            [pantomime.mime :refer [mime-type-of]])
   (:import [org.apache.commons.io FilenameUtils FileUtils]
            [java.net MalformedURLException JarURLConnection URL]
-           [java.io FileNotFoundException FileOutputStream FileInputStream File]))
+           [java.io FileNotFoundException FileOutputStream FileInputStream File InputStream]))
 
 (defn remove-extension [file-path]
   (FilenameUtils/removeExtension file-path))
@@ -36,6 +37,11 @@
     (fn [base-path to-add]
       (FilenameUtils/concat base-path (remove-leading-slash to-add)))
     paths))
+
+(defn make-file [path]
+  (if (jar-directory? path)
+    (input-stream (as-url path))
+    (as-file path)))
 
 (defmulti list-files #(if (jar-directory? %) :jar :file-system))
 
@@ -107,17 +113,38 @@
     file
     (read-resource-file file-path)))
 
-(defn slurp-or-read [body]
-  (try
-    (slurp body)
-  (catch java.io.FileNotFoundException e
-    body)))
+(defprotocol AssetBody
+  (asset-response [this path])
+  (body-to-string [this]))
 
-(defn body-to-string [body]
-  (try
-    (read-stream (FileInputStream. body))
-  (catch java.io.FileNotFoundException e
-    body)))
+(extend-protocol AssetBody
+  String
+  (asset-response [this path]
+    {:status 200
+     :headers {"Content-Length" (str (count this))
+               "Content-Type" (mime-type-of path)}
+     :body this})
+
+  (body-to-string [this]
+    this)
+
+  File
+  (asset-response [this path]
+    {:status 200
+     :body this})
+
+  (body-to-string [this]
+    (read-file (.getPath this)))
+
+  InputStream
+  (asset-response [this path]
+    {:status 200
+     :headers {"Content-Length" (str (.available this))
+              "Content-Type" (mime-type-of path)}
+     :body this})
+
+  (body-to-string [this]
+    (slurp this)))
 
 (defn body-to-stream [body out]
     (with-open [out out]

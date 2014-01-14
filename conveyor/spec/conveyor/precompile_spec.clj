@@ -7,14 +7,18 @@
             [conveyor.precompile :refer :all]
             [conveyor.file-utils :refer [read-file read-stream]])
   (:import [org.apache.commons.io FileUtils]
-           [java.io ByteArrayOutputStream FileInputStream]
-           [java.util.zip GZIPInputStream]))
+           [java.io ByteArrayOutputStream FileInputStream]))
 
 (describe "conveyor.precompile"
 
   (around [it]
     (let [config (thread-pipeline-config
+                   (add-compiler-config
+                     (configure-compiler
+                       (add-input-extension "js")
+                       (add-output-extension "precompiled")))
                    (set-output-dir "test_output")
+                   (set-use-digest-path false)
                    (add-directory-to-load-path "test_fixtures/public/images")
                    (add-directory-to-load-path "test_fixtures/public/javascripts")
                    (add-directory-to-load-path "test_fixtures/public/stylesheets"))]
@@ -45,15 +49,33 @@
     (should= "var test = 1;\n" (slurp "test_output/test1.js"))
     (should= ".test2 { color: black; }\n" (slurp "test_output/test2.css")))
 
+  (it "returns a set of paths given a file-extension regex"
+    (let [input (map (fn [x] {:relative-path x}) ["js.css" "test1.js" "another/test.js" "test.1.js"])
+          paths (find-regex-matches [#".*.js"] input)]
+      (should= #{"test1.js"
+                 "another/test.js"
+                 "test.1.js"} paths)))
+
+  (it "returns a set of paths given a file-name regex"
+    (let [input (map (fn [x] {:relative-path x}) ["this.js" "test.js" "test.precompiled" "test/index.fake"])
+          paths (find-regex-matches [#"test.*"] input)]
+      (should= #{"test.js"
+                 "test.precompiled"
+                 "test/index.fake"} paths)))
+
   (it "compiles files given a regex"
-    (precompile ["test1.js" #"test2.*" #"not-found-regex"])
+    (precompile ["test1.js" #"test2.*" #".*1.precompiled"])
     (should= "var test = 1;\n" (slurp "test_output/test1.js"))
-    (should= ".test2 { color: black; }\n" (slurp "test_output/test2.css")))
+    (should= ".test2 { color: black; }\n" (slurp "test_output/test2.css"))
+    (should= "var test = 1;\n" (slurp "test_output/test1.precompiled")))
 
   (it "compiles a png file"
     (precompile ["joodo.png"])
     (let [png-content (read-file "test_output/joodo.png")]
       (should= 6533 (count png-content))))
+
+  (around [it]
+    (with-pipeline-config (set-use-digest-path (pipeline-config) true) it))
 
   (it "writes the digest file"
     (precompile ["test1.js" "test2.css"])
@@ -98,17 +120,4 @@
         (should=
           @manifest-output
           manifest))))
-
-  (defn gunzip [file-name]
-    (read-stream (GZIPInputStream. (FileInputStream. (file file-name)))))
-
-  (it "gzips the output"
-    (precompile ["test1.js"])
-    (should= "var test = 1;\n" (gunzip "test_output/test1.js.gz")))
-
-  (it "gzips a png file"
-    (precompile ["joodo.png"])
-    (should= 6533 (count (gunzip "test_output/joodo.png.gz")))
-    (should= 6470 (count (read-file "test_output/joodo.png.gz"))))
-
   )

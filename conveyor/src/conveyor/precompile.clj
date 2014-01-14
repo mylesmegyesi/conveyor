@@ -1,9 +1,8 @@
 (ns conveyor.precompile
   (:require [conveyor.core :refer [find-asset! pipeline pipeline-config]]
-            [conveyor.file-utils :refer [file-join ensure-directory-of-file write-file write-gzipped-file]]
-            [conveyor.finder.interface :refer :all]
-            [conveyor.manifest :refer [manifest-path]]
-            ))
+            [conveyor.file-utils :refer [file-join ensure-directory-of-file write-file with-file-cache]]
+            [conveyor.strategy.runtime :refer [all-possible-output]]
+            [conveyor.manifest :refer [manifest-path]]))
 
 (defn- build-manifest [assets]
   (reduce
@@ -20,8 +19,7 @@
   (let [prefixed-path ((:path-prefixer (pipeline)) path)
         file-name (file-join (:output-dir (pipeline-config)) prefixed-path)]
     (ensure-directory-of-file file-name)
-    (write-file file-name body)
-    (write-gzipped-file file-name body)))
+    (write-file file-name body)))
 
 (defn- write-manifest [assets]
   (let [manifest (manifest-path (pipeline-config))]
@@ -31,28 +29,38 @@
 
 (defn- write-assets [assets]
   (doseq [{:keys [body logical-path digest-path]} assets]
-    (write-asset-path body logical-path)
-    (write-asset-path body digest-path))
+    (if digest-path
+      (write-asset-path body digest-path)
+      (write-asset-path body logical-path)))
   assets)
 
-(defn add-found-paths [paths regex finder]
-  (let [matches (get-paths-from-regex finder regex)]
-    (if (empty? matches)
-      paths
-      (apply conj paths matches))))
+(defn regex? [path]
+  (= (re-pattern path) path))
+
+(defn find-matches [path possible-files]
+  (if (regex? path)
+    (reduce
+      (fn [files {:keys [relative-path]}]
+        (if (re-matches path relative-path)
+          (conj files relative-path)
+          files))
+      []
+      possible-files)
+    [path]))
+
+(defn find-regex-matches [paths possible-files]
+  (-> (map #(find-matches % possible-files) paths)
+      (flatten)
+      (set)))
 
 (defn filter-regex [paths]
-  (let [finder (:finder (pipeline))]
-    (reduce
-      (fn [paths path]
-        (if (string? path)
-          (conj paths path)
-          (add-found-paths paths path finder)))
-      #{}
-      paths)))
+  (if (some regex? paths)
+    (find-regex-matches paths (all-possible-output (pipeline-config)))
+    paths))
 
 (defn precompile [paths]
-  (let [filtered-paths (filter-regex paths)]
-    (-> (doall (map #(find-asset! %) filtered-paths))
-      (write-assets)
-      (write-manifest))))
+  (with-file-cache (:load-paths (pipeline-config))
+    (let [filtered-paths (filter-regex paths)]
+      (-> (flatten (doall (map #(find-asset! %) filtered-paths)))
+        (write-assets)
+        (write-manifest)))))

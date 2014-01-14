@@ -1,10 +1,10 @@
 (ns conveyor.file-utils
-  (:require [clojure.java.io :refer [file as-file input-stream as-url copy output-stream]]
-            [clojure.string :refer [replace-first]])
+  (:require [clojure.java.io :refer [file as-file input-stream as-url copy output-stream resource]]
+            [clojure.string :refer [replace-first]]
+            [pantomime.mime :refer [mime-type-of]])
   (:import [org.apache.commons.io FilenameUtils FileUtils]
            [java.net MalformedURLException JarURLConnection URL]
-           [java.io FileNotFoundException FileOutputStream]
-           [java.util.zip GZIPOutputStream]))
+           [java.io FileNotFoundException FileOutputStream FileInputStream File InputStream]))
 
 (defn remove-extension [file-path]
   (FilenameUtils/removeExtension file-path))
@@ -16,7 +16,10 @@
   (FilenameUtils/getExtension file-path))
 
 (defn replace-extension [file-path extension]
-  (add-extension (remove-extension file-path) extension))
+  (let [path (remove-extension file-path)]
+    (if (empty? extension)
+      path
+      (add-extension path extension))))
 
 (defn- jar-directory? [dir]
   (try
@@ -34,6 +37,11 @@
     (fn [base-path to-add]
       (FilenameUtils/concat base-path (remove-leading-slash to-add)))
     paths))
+
+(defn make-file [path]
+  (if (jar-directory? path)
+    (input-stream (as-url path))
+    (as-file path)))
 
 (defmulti list-files #(if (jar-directory? %) :jar :file-system))
 
@@ -75,15 +83,17 @@
 (defn ensure-directory-of-file [file-name]
   (ensure-directory (.getParentFile (file file-name))))
 
-(defn read-stream [stream]
-  (let [sb (StringBuilder.)]
-    (with-open [stream stream]
-      (loop [c (.read stream)]
-        (if (neg? c)
-          (str sb)
-          (do
-            (.append sb (char c))
-            (recur (.read stream))))))))
+(def read-stream
+  (memoize
+    (fn [stream]
+      (let [sb (StringBuilder.)]
+        (with-open [stream stream]
+          (loop [c (.read stream)]
+            (if (neg? c)
+              (str sb)
+              (do
+                (.append sb (char c))
+                (recur (.read stream))))))))))
 
 (defn- read-normal-file [file-path]
   (let [file (as-file file-path)]
@@ -103,15 +113,68 @@
     file
     (read-resource-file file-path)))
 
-(defn- string->stream [body out]
-  (with-open [out out]
-    (doseq [c (.toCharArray body)]
-      (.write out (int c)))))
+(defprotocol AssetBody
+  (asset-response [this path])
+  (body-to-string [this]))
 
-(defn write-gzipped-file [f body]
-  (let [file-name (add-extension f "gz")]
-    (string->stream body (GZIPOutputStream. (FileOutputStream. (file file-name))))))
+(extend-protocol AssetBody
+  String
+  (asset-response [this path]
+    {:status 200
+     :headers {"Content-Length" (str (count this))
+               "Content-Type" (mime-type-of path)}
+     :body this})
+
+  (body-to-string [this]
+    this)
+
+  File
+  (asset-response [this path]
+    {:status 200
+     :body this})
+
+  (body-to-string [this]
+    (read-file (.getPath this)))
+
+  InputStream
+  (asset-response [this path]
+    {:status 200
+     :headers {"Content-Length" (str (.available this))
+              "Content-Type" (mime-type-of path)}
+     :body this})
+
+  (body-to-string [this]
+    (slurp this)))
+
+(defn body-to-stream [body out]
+    (with-open [out out]
+      (doseq [c (.toCharArray (body-to-string body))]
+        (.write out (int c)))))
 
 (defn write-file [f body]
-  (string->stream body (FileOutputStream. (file f))))
+  (body-to-stream body (FileOutputStream. (file f))))
+
+(defn -build-possible-input-files [load-paths]
+  (reduce
+    (fn [files load-path]
+      (reduce
+        (fn [files file]
+          (conj files
+                {:absolute-path file
+                 :relative-path (replace-first file (str load-path "/") "")}))
+        files
+        (list-files load-path)))
+    []
+    load-paths))
+
+(declare ^:dynamic *file-cache*)
+
+(defmacro with-file-cache [load-paths & body]
+  `(binding [*file-cache* (-build-possible-input-files ~load-paths)]
+    ~@body))
+
+(defn build-possible-input-files [load-paths]
+  (if (bound? #'*file-cache*)
+    *file-cache*
+    (-build-possible-input-files load-paths)))
 

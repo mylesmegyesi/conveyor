@@ -4,8 +4,10 @@
             [conveyor.core :refer :all]
             [conveyor.config :refer :all]
             [conveyor.precompile :refer [precompile]]
+            [conveyor.file-utils :refer [body-to-string]]
             [ring.mock.request :as mr])
-  (:import [org.apache.commons.io FileUtils]))
+  (:import [java.io File]
+           [org.apache.commons.io FileUtils]))
 
 (describe "conveyor.core"
 
@@ -126,13 +128,13 @@
       (let [config (initialize-config {:manifest "some-other-manifest.edn"})]
         (should= "some-other-manifest.edn" (:manifest config))))
 
-    (it "configures the search strategy"
-      (let [config (initialize-config {:asset-finder :precompiled})]
-        (should= :precompiled (:asset-finder config))))
+    (it "configures the pipeline strategy"
+      (let [config (initialize-config {:strategy :runtime})]
+        (should= :runtime (:strategy config))))
 
-    (it "defaults the search strategy to load-path"
+    (it "defaults the pipeline strategy to runtime"
       (let [config (initialize-config {})]
-        (should= :load-path (:asset-finder config))))
+        (should= :runtime (:strategy config))))
 
     (it "sets compression to true"
       (let [config (initialize-config {:compress true})]
@@ -173,7 +175,7 @@
 
   (context "find-asset"
 
-    (defn- it-finds-assets [asset-finder prepare-asset]
+    (defn- it-finds-assets [strategy prepare-asset]
       (list
 
         (def alphanumeric "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
@@ -185,7 +187,7 @@
         (around [it]
           (let [config (thread-pipeline-config
                          (set-output-dir (get-output-dir 15)) ; the manifest file get's cached once it is read, so write to a different output directory each test
-                         (set-asset-finder asset-finder)
+                         (set-strategy strategy)
                          (add-directory-to-load-path "test_fixtures/public/javascripts"))]
             (with-pipeline-config config
               (try
@@ -196,44 +198,53 @@
         (it "finds an asset and returns the body"
           (prepare-asset "test1.js")
           (let [found-asset (find-asset "test1.js")]
-            (should= "var test = 1;\n" (:body found-asset))))
+            (should= "var test = 1;\n" (body-to-string (:body found-asset)))))
+
+        (it "returns a static file as a file"
+          (prepare-asset "test1.js")
+          (let [found-asset (find-asset "test1.js")]
+            (should= File (.getClass (:body found-asset)))))
 
         (it "returns the logical path"
           (prepare-asset "test1.js")
           (let [asset (find-asset "test1.js")]
             (should= "test1.js" (:logical-path asset))
             (should= "/test1.js" (asset-url "test1.js"))
-            (should= asset (find-asset (:logical-path asset)))))
+            (should= (body-to-string (:body asset)) (body-to-string (:body (find-asset (:logical-path asset)))))))
 
-        (it "returns the digest and digest path"
+        (it "does not return the digest and digest path"
           (prepare-asset "test1.js")
           (let [asset (find-asset "test1.js")]
-            (should= "200368af90cc4c6f4f1ddf36f97a279e" (:digest asset))
-            (should= "test1-200368af90cc4c6f4f1ddf36f97a279e.js" (:digest-path asset))))
+            (should-be-nil (:digest asset))
+            (should-be-nil (:digest-path asset))))
+
+        (it "returns the digest and digest path if configured to"
+          (with-pipeline-config (set-use-digest-path (pipeline-config) true)
+            (prepare-asset "test1.js")
+            (let [asset (find-asset "test1.js")]
+              (should= "200368af90cc4c6f4f1ddf36f97a279e" (:digest asset))
+              (should= "test1-200368af90cc4c6f4f1ddf36f97a279e.js" (:digest-path asset)))))
 
         (it "maintains an iefix suffix"
             (prepare-asset "test1.js")
             (let [asset (find-asset "test1.js?#iefix")]
-              (should= "200368af90cc4c6f4f1ddf36f97a279e" (:digest asset))
-              (should= "test1-200368af90cc4c6f4f1ddf36f97a279e.js?#iefix" (:digest-path asset))))
+              (should= "test1.js?#iefix" (:logical-path asset))))
 
         (it "finds an asset with multiple load paths"
           (with-pipeline-config (add-directory-to-load-path (pipeline-config) "test_fixtures/public/stylesheets")
             (prepare-asset "test2.css")
             (let [asset (find-asset "test2.css")]
-              (should= ".test2 { color: black; }\n" (:body asset))
+              (should= ".test2 { color: black; }\n" (body-to-string (:body asset)))
               (should= "test2.css" (:logical-path asset))
-              (should= "/test2.css" (asset-url "test2.css"))
-              (should= "test2-9d7e7252425acc78ff419cf3d37a7820.css" (:digest-path asset)))))
+              (should= "/test2.css" (asset-url "test2.css")))))
 
         (it "finds an asset with a resource directory on its load path"
           (with-pipeline-config (add-resource-directory-to-load-path (pipeline-config) "stylesheets" "test1.css")
             (prepare-asset "test1.css")
             (let [asset (find-asset "test1.css")]
-              (should= ".test1 { color: white; }\n" (:body asset))
+              (should= ".test1 { color: white; }\n" (body-to-string (:body asset)))
               (should= "test1.css" (:logical-path asset))
-              (should= "/test1.css" (asset-url "test1.css"))
-              (should= "test1-89df887049f959cbe331b1da471f7e24.css" (:digest-path asset)))))
+              (should= "/test1.css" (asset-url "test1.css")))))
 
         (it "returns nil if the asset could not be found"
           (prepare-asset "test1.js")
@@ -257,37 +268,33 @@
           (with-pipeline-config @fake-compiler-config
             (prepare-asset "test2.fake-output")
             (let [asset (find-asset "test2.fake-output")]
-              (should= "Some fake thing\n" (:body asset))
+              (should= "Some fake thing\n" (body-to-string (:body asset)))
               (should= "test2.fake-output" (:logical-path asset))
-              (should= "/test2.fake-output" (asset-url "test2.fake-output"))
-              (should= "test2-979d812cfd0a7dc744af9e083a63ff10.fake-output" (:digest-path asset)))))
+              (should= "/test2.fake-output" (asset-url "test2.fake-output")))))
 
         (it "maintains file extension suffix"
           (with-pipeline-config @fake-compiler-config
             (prepare-asset "test2.fake-output")
             (let [asset (find-asset "test2.fake-output?#wat")]
-              (should= "Some fake thing\n" (:body asset))
+              (should= "Some fake thing\n" (body-to-string (:body asset)))
               (should= "test2.fake-output?#wat" (:logical-path asset))
-              (should= "/test2.fake-output?#wat" (asset-url "test2.fake-output?#wat"))
-              (should= "test2-979d812cfd0a7dc744af9e083a63ff10.fake-output?#wat" (:digest-path asset)))))
+              (should= "/test2.fake-output?#wat" (asset-url "test2.fake-output?#wat")))))
 
         (it "finds assets using the output extensions given by compilers if the file name has many dots"
           (with-pipeline-config @fake-compiler-config
             (prepare-asset "test.2.fake-output")
             (let [asset (find-asset "test.2.fake-output")]
-              (should= "Some fake thing with dots\n" (:body asset))
+              (should= "Some fake thing with dots\n" (body-to-string (:body asset)))
               (should= "test.2.fake-output" (:logical-path asset))
-              (should= "/test.2.fake-output" (asset-url "test.2.fake-output"))
-              (should= "test.2-e2cb442c231d4d2420a64a834c86324c.fake-output" (:digest-path asset)))))
+              (should= "/test.2.fake-output" (asset-url "test.2.fake-output")))))
 
         (it "finds assets using the input extensions given by compilers if the file name has many dots"
           (with-pipeline-config @fake-compiler-config
             (prepare-asset "test.2.fake")
             (let [asset (find-asset "test.2.fake")]
-              (should= "Some fake thing with dots\n" (:body asset))
+              (should= "Some fake thing with dots\n" (body-to-string (:body asset)))
               (should= "test.2.fake" (:logical-path asset))
-              (should= "/test.2.fake" (asset-url "test.2.fake"))
-              (should= "test.2-e2cb442c231d4d2420a64a834c86324c.fake" (:digest-path asset)))))
+              (should= "/test.2.fake" (asset-url "test.2.fake")))))
 
         (it "returns nil if the file is found, but the requested file extension does not match any compilers output extensions"
           (with-pipeline-config @fake-compiler-config
@@ -305,7 +312,7 @@
           (with-pipeline-config @fake1-compiler-config
             (prepare-asset "test3.fake-output")
             (let [asset (find-asset "test3.fake-output")]
-              (should= "Some fake thing1\n" (:body asset))
+              (should= "Some fake thing1\n" (body-to-string (:body asset)))
               (should= "test3.fake-output" (:logical-path asset))
               (should= "/test3.fake-output" (asset-url "test3.fake-output")))))
 
@@ -325,9 +332,17 @@
             (prepare-asset "test3.fake-output")
             (let [base-path (directory-path "test_fixtures/public/javascripts")
                   asset (find-asset "test3.fake-output")]
-              (should= (format "Some fake thing1\ncompiled with %s:fake1:fake-output" (str base-path "/test3.fake1")) (:body asset))
+              (should= (format "Some fake thing1\ncompiled with %s:fake1:fake-output" (str base-path "/test3.fake1")) (body-to-string (:body asset)))
               (should= "test3.fake-output" (:logical-path asset))
               (should= "/test3.fake-output" (asset-url "test3.fake-output")))))
+
+        (it "returns a file with no compiler for the extension as a static file"
+          (with-pipeline-config @test-compiler-config
+            (prepare-asset "test1.js")
+            (let [asset (find-asset "test1.js")]
+              (should= "var test = 1;\n" (body-to-string (:body asset)))
+              (should= "test1.js" (:logical-path asset))
+              (should= "/test1.js" (asset-url "test1.js")))))
 
         (defn test-compressor [config body filename]
           (str body "compressed"))
@@ -343,25 +358,25 @@
           (with-pipeline-config @test-compressor-config
             (prepare-asset "test1.js")
             (let [asset (find-asset "test1.js")]
-              (should= "var test = 1;\ncompressed" (:body asset)))))
+              (should= "var test = 1;\ncompressed" (body-to-string (:body asset))))))
 
         (it "only uses the compresses that matches the extension"
           (with-pipeline-config @test-compressor-config
             (prepare-asset "test2.fake")
             (let [asset (find-asset "test2.fake")]
-              (should= "Some fake thing\n" (:body asset)))))
+              (should= "Some fake thing\n" (body-to-string (:body asset))))))
 
         (it "does not compress the asset when disabled"
           (with-pipeline-config (set-compression @test-compressor-config false)
             (prepare-asset "test1.js")
             (let [asset (find-asset "test1.js")]
-              (should= "var test = 1;\n" (:body asset)))))
+              (should= "var test = 1;\n" (body-to-string (:body asset))))))
 
         (it "does not compress the asset when the pipeline is disabled"
           (with-pipeline-config (set-pipeline-enabled @test-compressor-config false)
             (prepare-asset "test1.js")
             (let [asset (find-asset "test1.js")]
-              (should= "var test = 1;\n" (:body asset)))))
+              (should= "var test = 1;\n" (body-to-string (:body asset))))))
 
         (it "a compiler with multiple extensions"
           (with-pipeline-config (add-compiler-config
@@ -385,10 +400,10 @@
             (prepare-asset ["multiple_outputs.html" "multiple_outputs.txt"])
             (let [html-asset (find-asset "multiple_outputs.html")
                   txt-asset (find-asset "multiple_outputs.txt")]
-              (should= "Multiple outputs\n" (:body html-asset))
+              (should= "Multiple outputs\n" (body-to-string (:body html-asset)))
               (should= "multiple_outputs.html" (:logical-path html-asset))
               (should= "/multiple_outputs.html" (asset-url "multiple_outputs.html"))
-              (should= "Multiple outputs\n" (:body txt-asset))
+              (should= "Multiple outputs\n" (body-to-string (:body txt-asset)))
               (should= "multiple_outputs.txt" (:logical-path txt-asset))
               (should= "/multiple_outputs.txt" (asset-url "multiple_outputs.txt")))))
 
@@ -400,25 +415,19 @@
                                     (add-input-extension "markdown")
                                     (add-output-extension "txt")))
 
-        (it "mutliple compilers match on input type but only one matches on output type"
+        (it "multiple compilers match on input type but only one matches on output type"
           (with-pipeline-config (-> (pipeline-config)
                                   (add-compiler-config @markdown-html-config)
                                   (add-compiler-config @markdown-txt-config))
             (prepare-asset ["multiple_outputs.html" "multiple_outputs.txt"])
             (let [html-asset (find-asset "multiple_outputs.html")
                   txt-asset (find-asset "multiple_outputs.txt")]
-            (should= "Multiple outputs\n" (:body html-asset))
+            (should= "Multiple outputs\n" (body-to-string (:body html-asset)))
             (should= "multiple_outputs.html" (:logical-path html-asset))
             (should= "/multiple_outputs.html" (asset-url "multiple_outputs.html"))
-            (should= "Multiple outputs\n" (:body txt-asset))
+            (should= "Multiple outputs\n" (body-to-string (:body txt-asset)))
             (should= "multiple_outputs.txt" (:logical-path txt-asset))
             (should= "/multiple_outputs.txt" (asset-url "multiple_outputs.txt")))))
-
-        (it "finds an asset using the digest path"
-          (with-pipeline-config @markdown-config
-            (prepare-asset "test1.js")
-            (let [asset (find-asset "test1.js")]
-              (should= asset (find-asset (:digest-path asset))))))
 
         (it "returns nil if the digest does not match"
           (with-pipeline-config @markdown-config
@@ -431,50 +440,24 @@
                                       (add-input-extension "coffee")
                                       (add-output-extension "js"))))
 
-        (context "index"
-          (tags :index)
-        (it "finds an index file"
-          (with-pipeline-config @coffeescript-config
-            (prepare-asset "test6.js")
-            (let [asset (find-asset "test6.js")]
-              (should= "var index = 1;\n" (:body asset))
-              (should= "test6.js" (:logical-path asset))
-              (should= "/test6.js" (asset-url "test6.js")))))
-
-        (it "finds an index file with dots in the directory name"
-          (with-pipeline-config @coffeescript-config
-            (prepare-asset "test.6.js")
-            (let [asset (find-asset "test.6.js")]
-              (should= "var index6 = 1;\n" (:body asset))
-              (should= "test.6.js" (:logical-path asset))
-              (should= "/test.6.js" (asset-url "test.6.js")))))
-
-        (it "finds an index file with a matching output extension"
-          (with-pipeline-config @coffeescript-config
-            (prepare-asset "test7.js")
-            (let [asset (find-asset "test7.js")]
-              (should= "var test7 = 1;\n" (:body asset))
-              (should= "test7.js" (:logical-path asset))
-              (should= "/test7.js" (asset-url "test7.js"))))))
-
         ))
 
-    (context "on the load path"
-      (it-finds-assets :load-path (fn [_] )))
+    (context "using the runtime pipeline"
+      (it-finds-assets :runtime (fn [_] )))
 
-    (context "in the output path"
+    (context "using the precompiled pipeline"
       (it-finds-assets :precompiled #(with-pipeline-config
-                                       (set-asset-finder (pipeline-config) :load-path)
+                                       (set-strategy (pipeline-config) :runtime)
                                        (precompile (flatten [%])))))
     )
 
   (context "asset-url"
 
-    (defn- it-finds-the-asset-url [asset-finder prepare-asset]
+    (defn- it-finds-the-asset-url [strategy prepare-asset]
 
       (list
         (with config (thread-pipeline-config
-                       (set-asset-finder asset-finder)
+                       (set-strategy strategy)
                        (set-output-dir "public")
                        (add-directory-to-load-path "test_fixtures/public/javascripts")))
         (around [it]
@@ -568,12 +551,12 @@
         )
       )
 
-    (context "on the load path"
-      (it-finds-the-asset-url :load-path (fn [_] )))
+    (context "using the runtime pipeline"
+      (it-finds-the-asset-url :runtime (fn [_] )))
 
-    (context "in the output path"
+    (context "using the precompiled pipeline"
       (it-finds-the-asset-url :precompiled #(with-pipeline-config
-                                              (set-asset-finder (pipeline-config) :load-path)
+                                              (set-strategy (pipeline-config) :runtime)
                                               (precompile (flatten [%])))))
 
     )

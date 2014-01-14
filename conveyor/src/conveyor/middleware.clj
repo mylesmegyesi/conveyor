@@ -1,6 +1,7 @@
 (ns conveyor.middleware
   (:require [clojure.string :refer [replace-first] :as clj-str]
             [conveyor.core  :refer [bind-config build-pipeline find-asset initialize-config]]
+            [conveyor.file-utils :refer [asset-response with-file-cache]]
             [pantomime.mime :refer [mime-type-of]]))
 
 (defn- build-asset-request?-fn [config]
@@ -18,13 +19,11 @@
   (let [remove-prefix (build-prefix-remover-fn config)]
     (fn [uri]
       (when-let [{:keys [body logical-path]} (find-asset (remove-prefix uri))]
-        {:status 200
-         :headers {"Content-Length" (str (count body))
-                   "Content-Type" (mime-type-of logical-path)}
-         :body body}))))
+        (asset-response body logical-path)))))
 
 (defn- build-serve-asset-fn [config]
-  (let [asset-request? (build-asset-request?-fn config)
+  (let [pipeline (delay (build-pipeline config))
+        asset-request? (build-asset-request?-fn config)
         build-asset-response (asset-response-fn config)]
     (fn [uri]
       (when (asset-request? uri)
@@ -40,7 +39,9 @@
     (bind-config
       config
       pipeline
-      (fn [] (handler request)))))
+      (fn []
+        (with-file-cache (:load-paths config)
+          (handler request))))))
 
 (defn wrap-pipeline-config [handler -config]
   (let [config (initialize-config -config)]

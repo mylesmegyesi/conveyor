@@ -18,7 +18,7 @@
                        (add-input-extension "js")
                        (add-output-extension "precompiled")))
                    (set-output-dir "test_output")
-                   (set-use-digest-path true)
+                   (set-use-digest-path false)
                    (add-directory-to-load-path "test_fixtures/public/images")
                    (add-directory-to-load-path "test_fixtures/public/javascripts")
                    (add-directory-to-load-path "test_fixtures/public/stylesheets"))]
@@ -73,6 +73,9 @@
     (precompile ["joodo.png"])
     (let [png-content (read-file "test_output/joodo.png")]
       (should= 6533 (count png-content))))
+
+  (around [it]
+    (with-pipeline-config (set-use-digest-path (pipeline-config) true) it))
 
   (it "writes the digest file"
     (precompile ["test1.js" "test2.css"])

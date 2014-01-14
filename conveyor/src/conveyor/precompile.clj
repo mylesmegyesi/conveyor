@@ -29,8 +29,9 @@
 
 (defn- write-assets [assets]
   (doseq [{:keys [body logical-path digest-path]} assets]
-    (write-asset-path body logical-path)
-    (if digest-path (write-asset-path body digest-path)))
+    (if digest-path
+      (write-asset-path body digest-path)
+      (write-asset-path body logical-path)))
   assets)
 
 (defn regex? [path]

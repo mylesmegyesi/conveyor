@@ -1,7 +1,6 @@
 (ns conveyor.middleware-spec
   (:require [speclj.core :refer :all]
             [ring.mock.request :as mr]
-            [ring.middleware.file-info :refer [wrap-file-info]]
             [conveyor.asset-body :refer [body-to-string response-body]]
             [conveyor.core :refer :all]
             [conveyor.config :refer :all]
@@ -10,10 +9,9 @@
 (describe "conveyor.middleware"
 
   (defn do-handler [handler request]
-    (let [wrapped-handler (wrap-file-info handler)]
-     (-> (wrapped-handler request)
-         (update-in [:body] slurp)
-         (update-in [:headers] #(dissoc % "Last-Modified")))))
+   (-> (handler request)
+       (update-in [:body] slurp)
+       (update-in [:headers] #(dissoc % "Last-Modified"))))
 
   (with config (thread-pipeline-config
                  (add-directory-to-load-path "test_fixtures/public/javascripts")
@@ -26,7 +24,7 @@
       (should=
         {:status 200
          :headers {"Content-Length" "14"
-                   "Content-Type" "text/javascript"
+                   "Content-Type" "application/javascript"
                    "ETag" (:digest expected-asset)}
          :body (slurp (response-body (:body expected-asset)))}
         (do-handler handler (mr/request :get "/test1.js")))))
@@ -37,7 +35,7 @@
       (should=
         {:status 200
          :headers {"Content-Length" "14"
-                   "Content-Type" "text/javascript"
+                   "Content-Type" "application/javascript"
                    "ETag" (:digest expected-asset)}
          :body (slurp (response-body (:body expected-asset)))}
         (do-handler handler (mr/request :get "/assets/test1.js")))))

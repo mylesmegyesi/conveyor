@@ -1,7 +1,8 @@
 (ns conveyor.middleware
   (:require [clojure.string :refer [replace-first] :as clj-str]
+            [conveyor.asset-body :refer [content-length last-modified-date response-body]]
             [conveyor.core  :refer [bind-config build-pipeline find-asset initialize-config]]
-            [conveyor.file-utils :refer [asset-response with-file-cache]]
+            [conveyor.file-utils :refer [with-file-cache]]
             [pantomime.mime :refer [mime-type-of]]))
 
 (defn- build-asset-request?-fn [config]
@@ -18,8 +19,13 @@
 (defn- asset-response-fn [config]
   (let [remove-prefix (build-prefix-remover-fn config)]
     (fn [uri]
-      (when-let [{:keys [body logical-path]} (find-asset (remove-prefix uri))]
-        (asset-response body logical-path)))))
+      (when-let [{:keys [body logical-path] :as asset} (find-asset (remove-prefix uri))]
+        {:status 200
+         :headers {"Content-Type" (mime-type-of logical-path)
+                   "Content-Length" (str (:content-length asset))
+                   "Last-Modified" (:last-modified asset)
+                   "ETag" (:digest asset)}
+         :body (response-body body)}))))
 
 (defn- build-serve-asset-fn [config]
   (let [pipeline (delay (build-pipeline config))

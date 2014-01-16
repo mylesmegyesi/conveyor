@@ -1,5 +1,6 @@
 (ns conveyor.strategy.precompiled
   (:require [clojure.java.io :refer [as-file]]
+            [conveyor.asset-body :refer [last-modified-date]]
             [conveyor.file-utils :refer [get-extension replace-extension add-extension read-file file-join]]
             [conveyor.strategy.interface :refer [Pipeline]]
             [conveyor.strategy.util :refer :all]
@@ -21,7 +22,9 @@
 
 (defn -find-asset [path config]
   (when-let [asset (-get-from-manifest path config)]
-    (assoc asset :body (read-file-in-output config (:logical-path asset)))))
+    (let [file (read-file-in-output config (:logical-path asset))]
+      (-> (assoc asset :body file)
+          (assoc :last-modified (last-modified-date file))))))
 
 (def find-asset
   (-> -find-asset

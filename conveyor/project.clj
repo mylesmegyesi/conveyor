@@ -10,7 +10,6 @@
                  [com.novemberain/pantomime "1.7.0"]]
 
   :profiles {:dev {:dependencies   [[speclj "2.9.1"]
-                                    [ring/ring-core "1.2.1"]
                                     [ring-mock "0.1.3"]]
                    :main           speclj.main
                    :resource-paths ["test_fixtures/resources"]

@@ -11,7 +11,8 @@
              (:logical-path asset)
              {:logical-path (:logical-path asset)
               :digest-path (:digest-path asset)
-              :digest (:digest asset)}))
+              :digest (:digest asset)
+              :content-length (:content-length asset)}))
     {}
     assets))
 

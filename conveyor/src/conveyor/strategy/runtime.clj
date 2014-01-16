@@ -1,6 +1,6 @@
 (ns conveyor.strategy.runtime
   (:require [clojure.string :refer [join replace-first] :as clj-str]
-            [digest :refer [md5]]
+            [conveyor.asset-body :refer :all]
             [conveyor.file-utils :refer :all]
             [conveyor.strategy.util :refer :all]
             [conveyor.strategy.interface :refer [Pipeline]]))
@@ -155,13 +155,10 @@
          :extension (get-extension logical-path)
          :logical-path (replace-extension logical-path requested-extension)}))))
 
-(defn add-digest [{:keys [body logical-path] :as asset}]
-  (let [digest (md5 body)]
-    (-> asset
-      (assoc :digest digest)
-      (assoc :digest-path (add-extension
-                            (str (remove-extension logical-path) "-" digest)
-                            (get-extension logical-path))))))
+(defn add-digest-path [{:keys [logical-path digest] :as asset}]
+  (assoc asset :digest-path (add-extension
+                        (str (remove-extension logical-path) "-" digest)
+                        (get-extension logical-path))))
 
 (defn compile? [{:keys [extension logical-path]} {:keys [compilers] :as config}]
   (and
@@ -191,13 +188,34 @@
 
 (defn apply-digest-path [handlers config]
   (if (:use-digest-path config)
-    (conj handlers add-digest)
+    (conj handlers add-digest-path)
     handlers))
+
+(defn add-digest [{:keys [body] :as asset}]
+  (assoc asset :digest (md5 body)))
+
+(defn add-content-length [{:keys [body] :as asset}]
+  (assoc asset :content-length (content-length body)))
+
+(defn add-last-modified [{:keys [body] :as asset}]
+  (assoc asset :last-modified (last-modified-date body)))
+
+(defn apply-last-modified [handlers asset]
+  (if (string? (:body asset))
+    handlers
+    (conj handlers add-last-modified)))
 
 (defn build-pipeline [file config]
   (-> []
     (apply-compile file config)
     (apply-compress file config)))
+
+(defn build-post-pipeline [pipeline asset config]
+  (-> pipeline
+    (apply-digest-path config)
+    (apply-last-modified asset)
+    (conj add-digest)
+    (conj add-content-length)))
 
 (def get-file
   (-> find-file
@@ -209,10 +227,8 @@
     (let [pipeline (build-pipeline file config)
           body (if (seq pipeline) (read-file absolute-path) (make-file absolute-path))
           asset (assoc file :body body)
-          pipeline (apply-digest-path pipeline config)]
-      (if (seq pipeline)
-        ((apply comp pipeline) asset)
-        asset))))
+          pipeline (build-post-pipeline pipeline asset config)]
+        ((apply comp pipeline) asset))))
 
 (deftype RuntimePipeline [config]
   Pipeline

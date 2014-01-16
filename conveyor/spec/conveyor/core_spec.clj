@@ -4,10 +4,16 @@
             [conveyor.core :refer :all]
             [conveyor.config :refer :all]
             [conveyor.precompile :refer [precompile]]
-            [conveyor.file-utils :refer [body-to-string]]
+            [conveyor.asset-body :refer [body-to-string]]
             [ring.mock.request :as mr])
   (:import [java.io File]
            [org.apache.commons.io FileUtils]))
+
+(defmacro with-last-modified [file new-time & body]
+  `(let [current-time# (.lastModified ~file)]
+     (.setLastModified ~file ~new-time)
+     (try ~@body
+       (finally (.setLastModified ~file current-time#)))))
 
 (describe "conveyor.core"
 
@@ -212,17 +218,31 @@
             (should= "/test1.js" (asset-url "test1.js"))
             (should= (body-to-string (:body asset)) (body-to-string (:body (find-asset (:logical-path asset)))))))
 
-        (it "does not return the digest and digest path"
+        (it "returns the digest"
           (prepare-asset "test1.js")
           (let [asset (find-asset "test1.js")]
-            (should-be-nil (:digest asset))
+            (should= "200368af90cc4c6f4f1ddf36f97a279e" (:digest asset))))
+
+        (it "returns the content-length"
+          (prepare-asset "test1.js")
+            (let [asset (find-asset "test1.js")]
+              (should= 14 (:content-length asset))))
+
+        (it "returns the last-modified date for a static file"
+          (prepare-asset "test1.js")
+            (let [asset (find-asset "test1.js")]
+              (with-last-modified (:body asset) 0
+                (should= "Thu, 01 Jan 1970 00:00:00 GMT" (:last-modified (find-asset "test1.js"))))))
+
+        (it "does not return the digest path"
+          (prepare-asset "test1.js")
+          (let [asset (find-asset "test1.js")]
             (should-be-nil (:digest-path asset))))
 
-        (it "returns the digest and digest path if configured to"
+        (it "returns the digest path if configured to"
           (with-pipeline-config (set-use-digest-path (pipeline-config) true)
             (prepare-asset "test1.js")
             (let [asset (find-asset "test1.js")]
-              (should= "200368af90cc4c6f4f1ddf36f97a279e" (:digest asset))
               (should= "test1-200368af90cc4c6f4f1ddf36f97a279e.js" (:digest-path asset)))))
 
         (it "maintains an iefix suffix"

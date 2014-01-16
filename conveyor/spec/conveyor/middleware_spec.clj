@@ -1,19 +1,17 @@
 (ns conveyor.middleware-spec
   (:require [speclj.core :refer :all]
             [ring.mock.request :as mr]
-            [ring.middleware.file-info :refer [wrap-file-info]]
+            [conveyor.asset-body :refer [body-to-string response-body]]
             [conveyor.core :refer :all]
             [conveyor.config :refer :all]
-            [conveyor.file-utils :refer [body-to-string]]
             [conveyor.middleware :refer :all]))
 
 (describe "conveyor.middleware"
 
   (defn do-handler [handler request]
-    (let [wrapped-handler (wrap-file-info handler)]
-     (-> (wrapped-handler request)
-         (update-in [:body] #(body-to-string %))
-         (update-in [:headers] #(dissoc % "Last-Modified")))))
+   (-> (handler request)
+       (update-in [:body] slurp)
+       (update-in [:headers] #(dissoc % "Last-Modified"))))
 
   (with config (thread-pipeline-config
                  (add-directory-to-load-path "test_fixtures/public/javascripts")
@@ -26,21 +24,50 @@
       (should=
         {:status 200
          :headers {"Content-Length" "14"
-                   "Content-Type" "text/javascript"}
-         :body (body-to-string (:body expected-asset))}
+                   "Content-Type" "application/javascript"
+                   "ETag" (:digest expected-asset)}
+         :body (slurp (response-body (:body expected-asset)))}
         (do-handler handler (mr/request :get "/test1.js")))))
 
-  (it "responds with the content-type and content-length of a compiled file"
-    (let [handler (wrap-asset-pipeline (fn [_] {:body "Test"}) (add-compiler-config @config
-                                                                  (configure-compiler
-                                                                    (add-input-extension "js")
-                                                                    (add-output-extension "css"))))]
+  (it "responds with a 304 if the provided etag is a match"
+    (let [handler (wrap-asset-pipeline (fn [_] :not-found) @config)
+          expected-asset (with-pipeline-config @config (find-asset "test1.js"))
+          request (-> (mr/request :get "/test1.js")
+                      (mr/header "If-None-Match" (str (:digest expected-asset))))]
+      (should= {:status 304} (handler request))))
+
+  (it "responds with the asset if the provided etag is not a match"
+    (let [handler (wrap-asset-pipeline (fn [_] :not-found) @config)
+          expected-asset (with-pipeline-config @config (find-asset "test1.js"))
+          request (-> (mr/request :get "/test1.js")
+                      (mr/header "If-None-Match" "12345"))]
       (should=
         {:status 200
          :headers {"Content-Length" "14"
-                   "Content-Type" "text/css"}
-         :body "var test = 1;\n"}
-        (do-handler handler (mr/request :get "/test1.css")))))
+                   "Content-Type" "application/javascript"
+                   "ETag" (:digest expected-asset)}
+         :body (slurp (response-body (:body expected-asset)))}
+        (do-handler handler request))))
+
+  (it "responds with a 304 if the last modified date is before the if-modified-since header"
+    (let [handler (wrap-asset-pipeline (fn [_] :not-found) @config)
+          expected-asset (with-pipeline-config @config (find-asset "test1.js"))
+          request (-> (mr/request :get "/test1.js")
+                      (mr/header "If-Modified-Since" "Thu, 16 Jan 2050 15:40:09 GMT"))]
+      (should= {:status 304} (handler request))))
+
+  (it "responds with the asset if the asset has been modified since the if-modified-since header"
+    (let [handler (wrap-asset-pipeline (fn [_] :not-found) @config)
+          expected-asset (with-pipeline-config @config (find-asset "test1.js"))
+          request (-> (mr/request :get "/test1.js")
+                      (mr/header "If-Modified-Since" "Sunday, 06-Nov-70 08:49:37 GMT"))]
+      (should=
+        {:status 200
+         :headers {"Content-Length" "14"
+                   "Content-Type" "application/javascript"
+                   "ETag" (:digest expected-asset)}
+         :body (slurp (response-body (:body expected-asset)))}
+        (do-handler handler request))))
 
   (it "serves assets with prefix"
     (let [handler (wrap-asset-pipeline (fn [_] :not-found) (add-prefix @config "/assets"))
@@ -48,8 +75,9 @@
       (should=
         {:status 200
          :headers {"Content-Length" "14"
-                   "Content-Type" "text/javascript"}
-         :body (body-to-string (:body expected-asset))}
+                   "Content-Type" "application/javascript"
+                   "ETag" (:digest expected-asset)}
+         :body (slurp (response-body (:body expected-asset)))}
         (do-handler handler (mr/request :get "/assets/test1.js")))))
 
   (it "detects the content type of a css file"
@@ -58,8 +86,9 @@
       (should=
         {:status 200
          :headers {"Content-Length" "25"
-                   "Content-Type" "text/css"}
-         :body (body-to-string (:body expected-asset))}
+                   "Content-Type" "text/css"
+                   "ETag" (:digest expected-asset)}
+         :body (slurp (response-body (:body expected-asset)))}
         (do-handler handler (mr/request :get "/test2.css")))))
 
   (it "reads a png file"
@@ -68,8 +97,9 @@
       (should=
         {:status 200
          :headers {"Content-Length" "6533"
-                   "Content-Type" "image/png"}
-         :body (body-to-string (:body expected-asset))}
+                   "Content-Type" "image/png"
+                   "ETag" (:digest expected-asset)}
+         :body (slurp (response-body (:body expected-asset)))}
         (do-handler handler (mr/request :get "/joodo.png")))))
 
   (it "reads a resource png file"
@@ -80,8 +110,9 @@
       (should=
         {:status 200
          :headers {"Content-Length" "6533"
-                   "Content-Type" "image/png"}
-         :body (body-to-string (:body expected-asset))}
+                   "Content-Type" "image/png"
+                   "ETag" (:digest expected-asset)}
+         :body (slurp (response-body (:body expected-asset)))}
         (do-handler handler (mr/request :get "/joodo.png")))))
 
   (it "calls the next handler when the asset is not found"

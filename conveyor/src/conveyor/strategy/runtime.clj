@@ -212,10 +212,10 @@
 
 (defn build-post-pipeline [pipeline asset config]
   (-> pipeline
-    (apply-digest-path config)
-    (apply-last-modified asset)
     (conj add-digest)
-    (conj add-content-length)))
+    (conj add-content-length)
+    (apply-digest-path config)
+    (apply-last-modified asset)))
 
 (def get-file
   (-> find-file
@@ -228,7 +228,7 @@
           body (if (seq pipeline) (read-file absolute-path) (make-file absolute-path))
           asset (assoc file :body body)
           pipeline (build-post-pipeline pipeline asset config)]
-        ((apply comp pipeline) asset))))
+        ((apply comp (reverse pipeline)) asset))))
 
 (deftype RuntimePipeline [config]
   Pipeline

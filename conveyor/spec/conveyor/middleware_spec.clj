@@ -18,6 +18,15 @@
                  (add-directory-to-load-path "test_fixtures/public/images")
                  (add-directory-to-load-path "test_fixtures/public/stylesheets")))
 
+  (defn test-compiler [config asset input output]
+    (assoc asset :body "Testing"))
+
+  (with compiler-config (add-compiler-config @config
+                          (configure-compiler
+                            (set-compiler test-compiler)
+                            (add-input-extension "js")
+                            (add-output-extension "test"))))
+
   (it "responds with the body of a javascript file when found"
     (let [handler (wrap-asset-pipeline (fn [_] :not-found) @config)
           expected-asset (with-pipeline-config @config (find-asset "test1.js"))]
@@ -28,6 +37,14 @@
                    "ETag" (:digest expected-asset)}
          :body (slurp (response-body (:body expected-asset)))}
         (do-handler handler (mr/request :get "/test1.js")))))
+
+  (it "responds with the compiled content"
+    (let [handler (wrap-asset-pipeline (fn [_] :not-found) @compiler-config)
+          request (mr/request :get "/test1.test")]
+      (should= "Testing" (:body (handler request)))
+      (should= "7" (-> (handler request)
+                       :headers
+                       (get "Content-Length")))))
 
   (it "responds with a 304 if the provided etag is a match"
     (let [handler (wrap-asset-pipeline (fn [_] :not-found) @config)

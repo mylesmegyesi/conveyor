@@ -29,6 +29,46 @@
          :body (slurp (response-body (:body expected-asset)))}
         (do-handler handler (mr/request :get "/test1.js")))))
 
+  (it "responds with a 304 if the provided etag is a match"
+    (let [handler (wrap-asset-pipeline (fn [_] :not-found) @config)
+          expected-asset (with-pipeline-config @config (find-asset "test1.js"))
+          request (-> (mr/request :get "/test1.js")
+                      (mr/header "If-None-Match" (str (:digest expected-asset))))]
+      (should= {:status 304} (handler request))))
+
+  (it "responds with the asset if the provided etag is not a match"
+    (let [handler (wrap-asset-pipeline (fn [_] :not-found) @config)
+          expected-asset (with-pipeline-config @config (find-asset "test1.js"))
+          request (-> (mr/request :get "/test1.js")
+                      (mr/header "If-None-Match" "12345"))]
+      (should=
+        {:status 200
+         :headers {"Content-Length" "14"
+                   "Content-Type" "application/javascript"
+                   "ETag" (:digest expected-asset)}
+         :body (slurp (response-body (:body expected-asset)))}
+        (do-handler handler request))))
+
+  (it "responds with a 304 if the last modified date is before the if-modified-since header"
+    (let [handler (wrap-asset-pipeline (fn [_] :not-found) @config)
+          expected-asset (with-pipeline-config @config (find-asset "test1.js"))
+          request (-> (mr/request :get "/test1.js")
+                      (mr/header "If-Modified-Since" "Thu, 16 Jan 2050 15:40:09 GMT"))]
+      (should= {:status 304} (handler request))))
+
+  (it "responds with the asset if the asset has been modified since the if-modified-since header"
+    (let [handler (wrap-asset-pipeline (fn [_] :not-found) @config)
+          expected-asset (with-pipeline-config @config (find-asset "test1.js"))
+          request (-> (mr/request :get "/test1.js")
+                      (mr/header "If-Modified-Since" "Sunday, 06-Nov-70 08:49:37 GMT"))]
+      (should=
+        {:status 200
+         :headers {"Content-Length" "14"
+                   "Content-Type" "application/javascript"
+                   "ETag" (:digest expected-asset)}
+         :body (slurp (response-body (:body expected-asset)))}
+        (do-handler handler request))))
+
   (it "serves assets with prefix"
     (let [handler (wrap-asset-pipeline (fn [_] :not-found) (add-prefix @config "/assets"))
           expected-asset (with-pipeline-config @config (find-asset "test1.js"))]

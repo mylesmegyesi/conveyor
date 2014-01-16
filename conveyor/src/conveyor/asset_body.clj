@@ -1,21 +1,8 @@
 (ns conveyor.asset-body
-  (:require [digest])
+  (:require [digest]
+            [conveyor.time-utils :refer [time-to-date-string]])
   (:import [java.io File]
-           [java.net URL]
-           [java.text SimpleDateFormat]
-           [java.util Date Locale TimeZone]))
-
-(defn format-date [^Date date]
-  (let [date-format (doto (SimpleDateFormat. "EEE, dd MMM yyyy HH:mm:ss ZZZ" Locale/US)
-                     (.setTimeZone (TimeZone/getTimeZone "UTC")))]
-    (.format date-format date)))
-
-(defn time->http-date [-time]
-  (-> (/ -time 1000)
-      (long)
-      (* 1000)
-      (Date.)
-      (format-date)))
+           [java.net URL]))
 
 (defprotocol AssetBody
   (response-body [this])
@@ -52,7 +39,7 @@
     (.length this))
 
   (last-modified-date [this]
-    (time->http-date (.lastModified this)))
+    (time-to-date-string (.lastModified this)))
 
   (body-to-string [this]
     (slurp this))
@@ -69,7 +56,7 @@
 
   (last-modified-date [this]
     (-> (.getLastModified (.openConnection this))
-        (time->http-date)))
+        (time-to-date-string)))
 
   (body-to-string [this]
     (slurp (.getInputStream (.openConnection this))))

@@ -232,7 +232,7 @@
           (prepare-asset "test1.js")
             (let [asset (find-asset "test1.js")]
               (with-last-modified (:body asset) 0
-                (should= "Thu, 01 Jan 1970 00:00:00 +0000" (:last-modified (find-asset "test1.js"))))))
+                (should= "Thu, 01 Jan 1970 00:00:00 GMT" (:last-modified (find-asset "test1.js"))))))
 
         (it "does not return the digest path"
           (prepare-asset "test1.js")

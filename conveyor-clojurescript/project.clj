@@ -1,4 +1,4 @@
-(defproject conveyor-clojurescript "0.2.7"
+(defproject conveyor-clojurescript "0.2.8"
   :description "Clojurescript plugin for conveyor"
   :url         "https://github.com/mylesmegyesi/conveyor"
   :license     {:name "Eclipse Public License"
@@ -6,7 +6,7 @@
 
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/clojurescript "0.0-2138" :exclusions [org.apache.ant/ant]]
-                 [conveyor "0.2.7"]]
+                 [conveyor "0.2.8"]]
 
   :profiles {:dev {:dependencies [[speclj "2.9.1"]]
                    :main         speclj.main

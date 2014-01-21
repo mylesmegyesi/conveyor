@@ -5,7 +5,7 @@
             [conveyor.core :refer :all]
             [conveyor.config :refer :all]
             [conveyor.precompile :refer :all]
-            [conveyor.file-utils :refer [read-file read-stream]])
+            [conveyor.file-utils :refer [read-file]])
   (:import [org.apache.commons.io FileUtils]
            [java.io ByteArrayOutputStream FileInputStream]))
 
@@ -74,50 +74,54 @@
     (let [png-content (read-file "test_output/joodo.png")]
       (should= 6533 (count png-content))))
 
-  (around [it]
-    (with-pipeline-config (set-use-digest-path (pipeline-config) true) it))
+  (context "with digest path"
 
-  (it "writes the digest file"
-    (precompile ["test1.js" "test2.css"])
-    (should= "var test = 1;\n" (slurp "test_output/test1-200368af90cc4c6f4f1ddf36f97a279e.js"))
-    (should= ".test2 { color: black; }\n" (slurp "test_output/test2-9d7e7252425acc78ff419cf3d37a7820.css")))
+    (around [it]
+      (with-pipeline-config (set-use-digest-path (pipeline-config) true) (it)))
 
-  (with manifest-output
-        {"test2.css" {:logical-path "test2.css"
-                      :digest-path "test2-9d7e7252425acc78ff419cf3d37a7820.css"
-                      :digest "9d7e7252425acc78ff419cf3d37a7820"}
-         "test1.js" {:logical-path "test1.js"
-                     :digest-path "test1-200368af90cc4c6f4f1ddf36f97a279e.js"
-                     :digest "200368af90cc4c6f4f1ddf36f97a279e"}})
-
-  (it "writes the manifest file mapping the logical path to the written file"
-    (precompile ["test1.js" "test2.css"])
-    (let [manifest (read-edn (slurp "test_output/manifest.edn"))]
-      (should=
-        @manifest-output
-        manifest)))
-
-  (it "writes the manifest file without the prefix"
-    (with-pipeline-config (add-prefix (pipeline-config) "/assets")
+    (it "writes the digest file"
       (precompile ["test1.js" "test2.css"])
-      (let [manifest (read-edn (slurp "test_output/assets/manifest.edn"))]
-        (should=
-          @manifest-output
-          manifest))))
+      (should= "var test = 1;\n" (slurp "test_output/test1-200368af90cc4c6f4f1ddf36f97a279e.js"))
+      (should= ".test2 { color: black; }\n" (slurp "test_output/test2-9d7e7252425acc78ff419cf3d37a7820.css")))
 
-  (it "writes the manifest that is specified in the config"
-    (with-pipeline-config (set-manifest (pipeline-config) "test_output/test-manifest.edn")
+    (with manifest-output
+          {"test2.css" {:logical-path "test2.css"
+                        :digest-path "test2-9d7e7252425acc78ff419cf3d37a7820.css"
+                        :digest "9d7e7252425acc78ff419cf3d37a7820"
+                        :content-length 25}
+           "test1.js" {:logical-path "test1.js"
+                       :digest-path "test1-200368af90cc4c6f4f1ddf36f97a279e.js"
+                       :digest "200368af90cc4c6f4f1ddf36f97a279e"
+                       :content-length 14}})
+
+    (it "writes the manifest file mapping the logical path to the written file"
       (precompile ["test1.js" "test2.css"])
-      (let [manifest (read-edn (slurp "test_output/test-manifest.edn"))]
+      (let [manifest (read-edn (slurp "test_output/manifest.edn"))]
         (should=
           @manifest-output
-          manifest))))
+          manifest)))
 
-  (it "creates the manifest file in a directory that does not exist"
-    (with-pipeline-config (set-manifest (pipeline-config) "test_manifest_dir/test-manifest.edn")
-      (precompile  ["test1.js" "test2.css"])
-      (let [manifest (read-edn (slurp "test_manifest_dir/test-manifest.edn"))]
-        (should=
-          @manifest-output
-          manifest))))
+    (it "writes the manifest file without the prefix"
+      (with-pipeline-config (add-prefix (pipeline-config) "/assets")
+        (precompile ["test1.js" "test2.css"])
+        (let [manifest (read-edn (slurp "test_output/assets/manifest.edn"))]
+          (should=
+            @manifest-output
+            manifest))))
+
+    (it "writes the manifest that is specified in the config"
+      (with-pipeline-config (set-manifest (pipeline-config) "test_output/test-manifest.edn")
+        (precompile ["test1.js" "test2.css"])
+        (let [manifest (read-edn (slurp "test_output/test-manifest.edn"))]
+          (should=
+            @manifest-output
+            manifest))))
+
+    (it "creates the manifest file in a directory that does not exist"
+      (with-pipeline-config (set-manifest (pipeline-config) "test_manifest_dir/test-manifest.edn")
+        (precompile  ["test1.js" "test2.css"])
+        (let [manifest (read-edn (slurp "test_manifest_dir/test-manifest.edn"))]
+          (should=
+            @manifest-output
+            manifest)))))
   )

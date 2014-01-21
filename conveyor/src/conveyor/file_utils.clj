@@ -1,7 +1,7 @@
 (ns conveyor.file-utils
   (:require [clojure.java.io :refer [file as-file input-stream as-url copy]]
             [clojure.string :refer [replace-first]]
-            [conveyor.asset-body :refer [body-to-string]])
+            [conveyor.asset-body :refer [read-stream body-to-string]])
   (:import [org.apache.commons.io FilenameUtils FileUtils]
            [java.net MalformedURLException]
            [java.io FileNotFoundException FileOutputStream File]))
@@ -82,18 +82,6 @@
 
 (defn ensure-directory-of-file [file-name]
   (ensure-directory (.getParentFile (file file-name))))
-
-(def read-stream
-  (memoize
-    (fn [stream]
-      (let [sb (StringBuilder.)]
-        (with-open [stream stream]
-          (loop [c (.read stream)]
-            (if (neg? c)
-              (str sb)
-              (do
-                (.append sb (char c))
-                (recur (.read stream))))))))))
 
 (defn- read-normal-file [file-path]
   (let [file (as-file file-path)]

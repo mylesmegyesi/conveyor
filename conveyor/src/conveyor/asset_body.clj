@@ -1,8 +1,19 @@
 (ns conveyor.asset-body
-  (:require [digest]
+  (:require [clojure.java.io :refer [input-stream]]
+            [digest]
             [conveyor.time-utils :refer [time-to-date-string]])
   (:import [java.io File]
            [java.net URL]))
+
+(defn read-stream [stream]
+  (let [sb (StringBuilder.)]
+    (with-open [stream stream]
+      (loop [c (.read stream)]
+        (if (neg? c)
+          (str sb)
+          (do
+            (.append sb (char c))
+            (recur (.read stream))))))))
 
 (defprotocol AssetBody
   (response-body [this])
@@ -42,7 +53,7 @@
     (time-to-date-string (.lastModified this)))
 
   (body-to-string [this]
-    (slurp this))
+    (read-stream (input-stream this)))
 
   URL
   (response-body [this]
@@ -59,5 +70,5 @@
         (time-to-date-string)))
 
   (body-to-string [this]
-    (slurp (.getInputStream (.openConnection this))))
+    (read-stream (.getInputStream (.openConnection this))))
 )

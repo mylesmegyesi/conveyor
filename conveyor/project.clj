@@ -7,7 +7,7 @@
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [digest "1.4.3"]
                  [commons-io "2.4"]
-                 [com.novemberain/pantomime "1.7.0"]]
+                 [com.novemberain/pantomime "2.0.0"]]
 
   :profiles {:dev {:dependencies   [[speclj "2.9.1"]
                                     [ring-mock "0.1.3"]]

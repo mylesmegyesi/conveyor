@@ -8,9 +8,11 @@ Conveyor includes plugins for:
 * Compass
 * Sass
 
+Using the `:runtime` strategy, Conveyor finds and compiles assets on each request. If a file in the load-paths can be compiled into the requested file given the configured compilers, an asset-map will be returned.
+
+Using the `:precompiled` strategy, Conveyor finds precompiled assets in the configured `:output-dir` by looking up asset-paths in the manifest. Assets must be precompiled using `precompile`, which writes asset-maps to the manifest and writes compiled files to the `:output-dir`.
+
 `asset-url` returns the url for a compiled asset.
-Using the `:runtime` strategy, Conveyor finds and compiles assets on each request.
-Using the `:precompiled` strategy, Conveyor finds precompiled assets from the configured `:output-dir`.
 
 # Installation
 ## Using Leiningen
@@ -44,7 +46,6 @@ $ rake install
    :compressors []
    :prefix "/"
    :output-dir "public"
-   :use-digest-path false
    :compress false
    :compile true
    :pipeline-enabled true})
@@ -56,10 +57,14 @@ $ rake install
 * `:compressor` - The list of compressors
 * `:prefix` - The prefix to append to asset-urls
 * `:output-dir` - The output directory for precompiled assets
-* `:use-digest-path` - Appends the md5 digest to the filename when true
 * `:compress` - Compress assets when true
 * `:compile` - Compile assets when true
 * `:pipeline-enabled` - No compile or compress when false
+
+Additional Optional Keys
+* `:asset-host` - The asset host for assets
+* `:use-digest-path` - Appends the md5 digest to the filename when true
+* `:manifest` - The directory to write the manifest, otherwise the `:output-dir` + `:prefix` is used
 
 ### Example Runtime Config
 ```clojure
@@ -108,7 +113,7 @@ $ rake install
 ```
 
 ### wrap-pipeline-config
-`wrap-pipeline-config` can be used to serve precompiled assets from the `:output-dir` when using the `:precompiled` strategy.
+`wrap-pipeline-config` can be used to initialize the pipeline with a given config for calls to `asset-url`. `wrap-pipeline-config` does not serve assets, so other middleware like [Ring](https://github.com/ring-clojure/ring) `wrap-file-info` and `wrap-resource` can be used to serve precompiled assets.
 ```clojure
 (ns sample.core
   (:require [conveyor.middleware :refer [wrap-pipeline-config]]))
@@ -128,7 +133,25 @@ $ rake install
 (ns sample.core
   (:require [conveyor.core :refer [asset-url]]))
 
-(asset-url "application.js") ;=> "/assets/application.js"
+(def prefix-config {:load-paths [{:type :directory :path "src/javascripts"}]
+                    :prefix "/assets"})
+
+(with-pipeline-config prefix-config
+  (asset-url "application.js")  ;=> "/assets/application.js"
+  (asset-url "other/index.js")) ;=> "/assets/other/index.js"
+
+(def host-config {:load-paths [{:type :directory :path "src/javascripts"}]
+                  :asset-host "http://example.net"})
+
+(with-pipeline-config host-config
+  (asset-url "application.js")) ;=> "http://example.net/application.js"
+
+(def digest-path-config {:load-paths [{:type :directory :path "src/javascripts"}]
+                         :prefix "/assets"
+                         :use-digest-path true})
+
+(with-pipeline-config digest-path-config
+  (asset-url "application.js")) ;=> "/assets/application-200368af90cc4c6f4f1ddf36f97a279e.js"
 ```
 
 ## precompile
@@ -155,7 +178,10 @@ $ rake install
 (ns sample.core
   (:require [conveyor.core :refer [find-asset]]))
 
-(find-asset "test2.css")
+(defn config {:use-digest-path true})
+
+(with-pipeline-config config
+  (find-asset "test2.css"))
 ```
 ```clojure
 {:digest-path "test2-9d7e7252425acc78ff419cf3d37a7820.css",
@@ -163,6 +189,22 @@ $ rake install
  :body ".test2 { color: black; }\n",
  :absolute-path "/home/conveyor/conveyor/test_fixtures/public/stylesheets/test2.css",
  :content-length 25
+ :extension "css",
+ :logical-path "test2.css"}
+```
+```clojure
+(defn config {:use-digest-path false
+              :pipeline-enabled false})
+
+(with-pipeline-config config
+  (find-asset "test2.css"))
+```
+```clojure
+{:digest "9d7e7252425acc78ff419cf3d37a7820",
+ :body #<File test2.css>,
+ :absolute-path "/home/conveyor/conveyor/test_fixtures/public/stylesheets/test2.css",
+ :content-length 25
+ :last-modified "Thu, 01 Jan 2013 00:00:00 GMT"
  :extension "css",
  :logical-path "test2.css"}
 ```

@@ -4,6 +4,7 @@
             [conveyor.core :refer [add-to-load-path append-to-key]]))
 
 (defmacro thread-pipeline-config [& body]
+  "Threads an empty config through any config modifiers"
   `(-> {}
      ~@body))
 

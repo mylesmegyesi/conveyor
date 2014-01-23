@@ -35,10 +35,10 @@
       (write-asset-path body logical-path)))
   assets)
 
-(defn regex? [path]
+(defn- regex? [path]
   (= (re-pattern path) path))
 
-(defn find-matches [path possible-files]
+(defn- find-matches [path possible-files]
   (if (regex? path)
     (reduce
       (fn [files {:keys [relative-path]}]
@@ -54,12 +54,14 @@
       (flatten)
       (set)))
 
-(defn filter-regex [paths]
+(defn- filter-regex [paths]
   (if (some regex? paths)
     (find-regex-matches paths (all-possible-output (pipeline-config)))
     paths))
 
 (defn precompile [paths]
+  "Precompiles assets by finding assets using the runtime pipeline,
+   writing asset-maps to the manifest, and writing files to the output-dir"
   (with-file-cache (:load-paths (pipeline-config))
     (let [filtered-paths (filter-regex paths)]
       (-> (flatten (doall (map #(find-asset! %) filtered-paths)))

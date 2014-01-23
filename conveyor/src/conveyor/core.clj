@@ -103,7 +103,7 @@
    :compile true
    :pipeline-enabled true})
 
-(defn apply-defaults [config]
+(defn- apply-defaults [config]
   (merge-with #(if (nil? %2) %1 %2) default-pipeline-config config))
 
 (defn initialize-config [config]
@@ -122,12 +122,12 @@
     (fn [path] (file-join "/" prefix path))
     (fn [path] (file-join "/" path))))
 
-(defn build-path-finder-fn [strategy config]
+(defn- build-path-finder-fn [strategy config]
   (if (:use-digest-path config)
     (fn [path] (get-digest-path strategy path))
     (fn [path] (get-logical-path strategy path))))
 
-(defn build-url-builder-fn [config]
+(defn- build-url-builder-fn [config]
   (if-let [asset-host (:asset-host config)]
     (fn [path] (str asset-host path))
     (fn [path] path)))
@@ -146,10 +146,12 @@
       (bind-config config pipeline f))))
 
 (defmacro with-pipeline-config [config & body]
+  "Initializes and binds the pipeline given a config, then executes body"
   `(let [config# (initialize-config ~config)]
      (bind-config config# (build-pipeline config#) (fn [] ~@body))))
 
 (defn find-asset [path]
+  "Finds an asset according to the configured strategy and returns an asset map"
   (get-asset (:strategy (pipeline)) path))
 
 (defmacro throw-unless-found [path & body]
@@ -174,4 +176,6 @@
   ((:url-builder (pipeline)) path))
 
 (defn asset-url [path]
+  "If use-digest-path is true, returns the digest-path,
+   else returns the logical-path of an asset"
   (build-url (asset-path path)))

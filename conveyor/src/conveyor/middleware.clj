@@ -17,11 +17,11 @@
         (replace-first without-prefix "/" "")
         without-prefix))))
 
-(defn etag-match? [etag digest]
+(defn- etag-match? [etag digest]
   (when etag
     (= etag digest)))
 
-(defn not-modified-since? [since last-modified]
+(defn- not-modified-since? [since last-modified]
   (when since
     (let [since-date (string-to-date since)
           last-modified-date (string-to-date last-modified)]
@@ -29,14 +29,14 @@
            last-modified-date
            (.before last-modified-date since-date)))))
 
-(defn not-modified-response [{:keys [headers]} {:keys [digest last-modified]}]
+(defn- not-modified-response [{:keys [headers]} {:keys [digest last-modified]}]
   (let [etag (headers "if-none-match")
         modified-since (headers "if-modified-since")]
     (if (or (etag-match? etag digest)
             (not-modified-since? modified-since last-modified))
       {:status 304})))
 
-(defn ok-response [{:keys [logical-path content-length last-modified digest body]}]
+(defn- ok-response [{:keys [logical-path content-length last-modified digest body]}]
   (let [response {:status 200
                   :headers {"Content-Type" (mime-type-of logical-path)
                             "Content-Length" (str content-length)
@@ -76,6 +76,7 @@
           (handler request))))))
 
 (defn wrap-pipeline-config [handler -config]
+  "Initializes and binds the pipeline with a config"
   (let [config (initialize-config -config)]
     (wrap-bind-config
       handler
@@ -83,6 +84,8 @@
       (build-pipeline config))))
 
 (defn wrap-asset-pipeline [handler -config]
+  "Initializes and binds pipeline, and serves assets
+   for any requests matching the config :prefix"
   (let [config (initialize-config -config)]
     (-> handler
       (wrap-serve-asset config)

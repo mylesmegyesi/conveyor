@@ -9,7 +9,7 @@ $ lein ring server
 ```
 To use the precompiled strategy:
 
-First, run the precompile task, which can be found in src/example/precompile.clj
+First, run the precompile task, which can be found in src/clj/example/precompile.clj
 
 ```bash
 $ lein precompile-assets

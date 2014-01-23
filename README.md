@@ -165,7 +165,7 @@ Additional Optional Keys
              :plugins [:sass :compass]})
 
 (def assets ["application.css" "application.js"
-             #".*.pdf" #".*.eot" #".*.svg" #".*.ttf" #".*.woff" #".*.jpg" #".*.png"])
+             #".*\.pdf" #".*\.eot" #".*\.svg" #".*\.ttf" #".*\.woff" #".*\.jpg" #".*\.png"])
 
 (defn -main [& args]
   (with-pipeline-config config

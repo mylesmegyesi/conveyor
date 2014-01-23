@@ -85,7 +85,7 @@ Additional Optional Keys
                            :optimizations :whitespace
                            :pretty-print false}]
  :prefix "/assets"
- :output-dir "/resources/public"
+ :output-dir "resources/public"
  :strategy :runtime}
 ```
 
@@ -94,7 +94,7 @@ Additional Optional Keys
 {:strategy :precompiled
  :pipeline-enabled false
  :prefix "/assets"
- :output-dir "/resources/public"
+ :output-dir "resources/public"
  :use-digest-path true}
 ```
 

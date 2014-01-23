@@ -1,9 +1,11 @@
 (ns example.core
   (:require [compojure.core :refer [defroutes GET]]
             [conveyor.core :refer [asset-url]]
-            [conveyor.middleware :refer [wrap-asset-pipeline]]
+            [conveyor.middleware :refer [wrap-asset-pipeline wrap-pipeline-config]]
             [hiccup.core :refer [html]]
-            [hiccup.page :refer [include-css include-js]]))
+            [hiccup.page :refer [include-css include-js]]
+            [ring.middleware.resource :refer [wrap-resource]]
+            [ring.middleware.file-info :refer [wrap-file-info]]))
 
 (def conveyor-config
   {:load-paths [{:type :directory
@@ -15,8 +17,22 @@
                      :optimizations :whitespace
                      :pretty-print false}]
     :prefix "/assets"
-    :output-dir "/resources/public"
+    :output-dir "resources/public"
     :strategy :runtime})
+
+(defn production-config [config]
+  (assoc config :strategy :precompiled))
+
+(defn production? []
+  (let [production (System/getenv "PRODUCTION")]
+    (and production (= production "true"))))
+
+(defn wrap-assets [handler config]
+  (if (production?)
+    (-> (wrap-resource handler "public")
+        wrap-file-info
+        (wrap-pipeline-config (production-config config)))
+    (wrap-asset-pipeline handler config)))
 
 (defn render-index []
   (html
@@ -34,4 +50,4 @@
 
 (def handler
   (-> app
-    (wrap-asset-pipeline conveyor-config)))
+    (wrap-assets conveyor-config)))

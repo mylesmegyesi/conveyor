@@ -2,9 +2,10 @@
   :description "An example app using conveyor"
 
   :dependencies [[org.clojure/clojure "1.5.1"]
+                 [compojure "1.1.6"]
                  [conveyor "0.2.8"]
                  [hiccup "1.0.4"]
-                 [compojure "1.1.6"]]
+                 [ring/ring-core "1.2.1" :exclusions [org.clojure/tools.reader]]]
 
   :source-paths ["src/clj"]
   :test-paths ["spec/clj"]
@@ -32,6 +33,9 @@
 
                    :plugins [[speclj "2.9.1"]
                              [lein-cljsbuild "1.0.1"]]
+
+                   :aliases {"precompile-assets" ["run" "-m" "example.precompile"]}
+
                    :cljsbuild ~(let [test-command ["bin/specljs" "target/specs.js"]]
                                 {:builds {:dev {:source-paths ["src/cljs" "spec/cljs"]
                                                 :compiler {:output-to "target/specs.js"

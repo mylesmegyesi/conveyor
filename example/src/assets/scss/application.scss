@@ -1,0 +1,20 @@
+$black: #363B3F;
+$white: #fff;
+
+div {
+  width: 200px;
+  height: 200px;
+  padding: 20px;
+  text-align: center;
+  font-size: 1.5em;
+}
+
+div#target {
+  background-color: $black;
+  color: $white;
+}
+
+div#clicked {
+  background-color: $white;
+  color: $black;
+}

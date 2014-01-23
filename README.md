@@ -85,7 +85,7 @@ Additional Optional Keys
                            :optimizations :whitespace
                            :pretty-print false}]
  :prefix "/assets"
- :output-dir "/resources/public"
+ :output-dir "resources/public"
  :strategy :runtime}
 ```
 
@@ -94,7 +94,7 @@ Additional Optional Keys
 {:strategy :precompiled
  :pipeline-enabled false
  :prefix "/assets"
- :output-dir "/resources/public"
+ :output-dir "resources/public"
  :use-digest-path true}
 ```
 
@@ -165,7 +165,7 @@ Additional Optional Keys
              :plugins [:sass :compass]})
 
 (def assets ["application.css" "application.js"
-             #".*.pdf" #".*.eot" #".*.svg" #".*.ttf" #".*.woff" #".*.jpg" #".*.png"])
+             #".*\.pdf" #".*\.eot" #".*\.svg" #".*\.ttf" #".*\.woff" #".*\.jpg" #".*\.png"])
 
 (defn -main [& args]
   (with-pipeline-config config

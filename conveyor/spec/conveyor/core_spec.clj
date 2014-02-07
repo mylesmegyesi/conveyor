@@ -206,6 +206,12 @@
           (let [found-asset (find-asset "test1.js")]
             (should= "var test = 1;\n" (body-to-string (:body found-asset)))))
 
+        (it "finds multiple assets"
+          (prepare-asset ["test1.js" "test2.fake"])
+          (let [found-assets (find-assets ["test1.js" #"test2.*"])]
+            (should= "Some fake thing\n" (body-to-string (:body (first found-assets))))
+            (should= "var test = 1;\n" (body-to-string (:body (second found-assets))))))
+
         (it "returns a static file as a file"
           (prepare-asset "test1.js")
           (let [found-asset (find-asset "test1.js")]

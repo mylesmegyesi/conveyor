@@ -1,7 +1,6 @@
 (ns conveyor.precompile
-  (:require [conveyor.core :refer [find-asset! pipeline pipeline-config]]
+  (:require [conveyor.core :refer [find-assets pipeline pipeline-config]]
             [conveyor.file-utils :refer [file-join ensure-directory-of-file write-file with-file-cache]]
-            [conveyor.strategy.runtime :refer [all-possible-output]]
             [conveyor.manifest :refer [manifest-path]]))
 
 (defn- build-manifest [assets]
@@ -35,35 +34,10 @@
       (write-asset-path body logical-path)))
   assets)
 
-(defn- regex? [path]
-  (= (re-pattern path) path))
-
-(defn- find-matches [path possible-files]
-  (if (regex? path)
-    (reduce
-      (fn [files {:keys [relative-path]}]
-        (if (re-matches path relative-path)
-          (conj files relative-path)
-          files))
-      []
-      possible-files)
-    [path]))
-
-(defn find-regex-matches [paths possible-files]
-  (-> (map #(find-matches % possible-files) paths)
-      (flatten)
-      (set)))
-
-(defn- filter-regex [paths]
-  (if (some regex? paths)
-    (find-regex-matches paths (all-possible-output (pipeline-config)))
-    paths))
-
 (defn precompile [paths]
   "Precompiles assets by finding assets using the runtime pipeline,
    writing asset-maps to the manifest, and writing files to the output-dir"
   (with-file-cache (:load-paths (pipeline-config))
-    (let [filtered-paths (filter-regex paths)]
-      (-> (flatten (doall (map #(find-asset! %) filtered-paths)))
+    (-> (find-assets paths)
         (write-assets)
-        (write-manifest)))))
+        (write-manifest))))

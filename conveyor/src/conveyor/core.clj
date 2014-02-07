@@ -3,6 +3,7 @@
             [clojure.string :as clj-str]
             [conveyor.file-utils :refer [file-join]]
             [conveyor.strategy.interface :refer [get-asset get-logical-path get-digest-path]]
+            [conveyor.strategy.runtime :refer [all-possible-output]]
             [conveyor.strategy.factory :refer [make-pipeline-strategy]]))
 
 (declare ^:dynamic *pipeline*)
@@ -161,6 +162,34 @@
 
 (defn find-asset! [path]
   (throw-unless-found path (find-asset path)))
+
+(defn- regex? [path]
+  (= (re-pattern path) path))
+
+(defn- find-matches [path possible-files]
+  (if (regex? path)
+    (reduce
+      (fn [files {:keys [relative-path]}]
+        (if (re-matches path relative-path)
+          (conj files relative-path)
+          files))
+      []
+      possible-files)
+    [path]))
+
+(defn find-regex-matches [paths possible-files]
+  (-> (map #(find-matches % possible-files) paths)
+      (flatten)
+      (set)))
+
+(defn- filter-regex [paths]
+  (if (some regex? paths)
+    (find-regex-matches paths (all-possible-output (pipeline-config)))
+    paths))
+
+(defn find-assets [paths]
+  (let [filtered-paths (filter-regex paths)]
+    (flatten (doall (map #(find-asset! %) filtered-paths)))))
 
 (defn- get-path [path]
   (let [pipe (pipeline)

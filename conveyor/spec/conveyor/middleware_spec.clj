@@ -4,7 +4,8 @@
             [conveyor.asset-body :refer [body-to-string response-body]]
             [conveyor.core :refer :all]
             [conveyor.config :refer :all]
-            [conveyor.middleware :refer :all]))
+            [conveyor.middleware :refer :all]
+            [conveyor.pipeline :refer :all]))
 
 (describe "conveyor.middleware"
 

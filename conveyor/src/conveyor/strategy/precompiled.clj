@@ -2,6 +2,7 @@
   (:require [clojure.java.io :refer [as-file]]
             [conveyor.asset-body :refer [last-modified-date]]
             [conveyor.file-utils :refer [get-extension replace-extension add-extension read-file file-join]]
+            [conveyor.pipeline :refer [get-path]]
             [conveyor.strategy.interface :refer [Pipeline]]
             [conveyor.strategy.util :refer :all]
             [conveyor.manifest :refer [read-manifest manifest-path]]))
@@ -14,7 +15,7 @@
               (manifest-path config)))))
 
 (defn- read-file-in-output [{:keys [output-dir]} file-path]
-  (as-file (file-join output-dir file-path)))
+  (as-file (file-join output-dir (get-path file-path))))
 
 (defn- -get-from-manifest [path config]
   (let [manifest (read-manifest config)]

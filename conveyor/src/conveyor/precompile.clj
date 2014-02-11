@@ -1,7 +1,8 @@
 (ns conveyor.precompile
-  (:require [conveyor.core :refer [find-assets pipeline pipeline-config]]
+  (:require [conveyor.core :refer [find-assets]]
             [conveyor.file-utils :refer [file-join ensure-directory-of-file write-file with-file-cache]]
-            [conveyor.manifest :refer [manifest-path]]))
+            [conveyor.manifest :refer [manifest-path]]
+            [conveyor.pipeline :refer [pipeline pipeline-config]]))
 
 (defn- build-manifest [assets]
   (reduce

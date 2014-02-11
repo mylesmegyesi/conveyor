@@ -2,22 +2,10 @@
   (:require [clojure.java.io :refer [resource file]]
             [clojure.string :as clj-str]
             [conveyor.file-utils :refer [file-join]]
+            [conveyor.pipeline :refer :all]
             [conveyor.strategy.interface :refer [get-asset get-logical-path get-digest-path]]
             [conveyor.strategy.runtime :refer [all-possible-output]]
             [conveyor.strategy.factory :refer [make-pipeline-strategy]]))
-
-(declare ^:dynamic *pipeline*)
-(declare ^:dynamic *pipeline-config*)
-
-(defn pipeline []
-  (if (bound? #'*pipeline*)
-    *pipeline*
-    (throw (Exception. "Pipeline config not bound."))))
-
-(defn pipeline-config []
-  (if (bound? #'*pipeline-config*)
-    *pipeline-config*
-    (throw (Exception. "Pipeline config not bound."))))
 
 (defn append-to-key [m key value]
   (update-in m [key] #(conj % value)))
@@ -91,18 +79,6 @@
             (configure-fn config)))))
     config
     plugins))
-
-(def default-pipeline-config
-  {:load-paths []
-   :cache-dir "target/conveyor-cache"
-   :strategy :runtime
-   :compilers []
-   :compressors []
-   :prefix "/"
-   :output-dir "public"
-   :compress false
-   :compile true
-   :pipeline-enabled true})
 
 (defn- apply-defaults [config]
   (merge-with #(if (nil? %2) %1 %2) default-pipeline-config config))
@@ -190,13 +166,6 @@
 (defn find-assets [paths]
   (let [filtered-paths (filter-regex paths)]
     (flatten (doall (map #(find-asset! %) filtered-paths)))))
-
-(defn- get-path [path]
-  (let [pipe (pipeline)
-        prefix-fn (:path-prefixer pipe)
-        path-finder-fn (:path-finder pipe)]
-    (if-let [path (path-finder-fn path)]
-      (prefix-fn path))))
 
 (defn- asset-path [path]
   (throw-unless-found path (get-path path)))

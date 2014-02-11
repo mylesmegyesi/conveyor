@@ -3,6 +3,7 @@
             [clojure.java.io :refer [file]]
             [conveyor.core :refer :all]
             [conveyor.config :refer :all]
+            [conveyor.pipeline :refer :all]
             [conveyor.precompile :refer [precompile]]
             [conveyor.asset-body :refer [body-to-string]]
             [ring.mock.request :as mr])

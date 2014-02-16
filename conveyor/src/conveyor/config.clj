@@ -87,13 +87,5 @@
     (add-prefix config prefix)
     config))
 
-(defn add-resource-directory-to-load-path [config directory-path resource-in-directory]
-  (let [path-map {:type :resource-directory
-                  :path directory-path
-                  :file-in-dir resource-in-directory}]
-    (add-to-load-path config path-map)))
-
 (defn add-directory-to-load-path [config path]
-  (let [path-map {:type :directory
-                  :path path}]
-    (add-to-load-path config path-map)))
+  (add-to-load-path config path))

@@ -122,7 +122,7 @@
 
   (it "reads a resource png file"
     (let [config (thread-pipeline-config
-                   (add-resource-directory-to-load-path "images" "joodo.png"))
+                   (add-directory-to-load-path "images"))
           handler (wrap-asset-pipeline (fn [_] :not-found) config)
           expected-asset (with-pipeline-config config (find-asset "joodo.png"))]
       (should=

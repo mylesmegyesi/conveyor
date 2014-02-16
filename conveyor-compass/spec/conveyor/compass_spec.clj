@@ -13,9 +13,9 @@
       path))
 
   (with stylesheets (directory-path "test_fixtures/stylesheets"))
-  (with frameworks (normalize (resource-directory-path "compass-0.12.2/frameworks" "compass/templates/ellipsis/ellipsis.sass")))
-  (with compass-templates (str @frameworks "/compass/templates"))
-  (with blueprint-stylesheets (str @frameworks "/blueprint/stylesheets"))
+  (with frameworks (normalize (resource-directory-path "compass-0.12.2/frameworks")))
+  (with compass-templates (str @frameworks "compass/templates"))
+  (with blueprint-stylesheets (str @frameworks "blueprint/stylesheets"))
   (with config (thread-pipeline-config
                  (add-directory-to-load-path "test_fixtures/stylesheets")
                  (assoc :plugins [:sass :compass])))

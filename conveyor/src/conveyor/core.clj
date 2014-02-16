@@ -1,7 +1,7 @@
 (ns conveyor.core
-  (:require [clojure.java.io :refer [resource file]]
+  (:require [clojure.java.io :refer [file]]
             [clojure.string :as clj-str]
-            [conveyor.file-utils :refer [file-join]]
+            [conveyor.file-utils :refer [absolute-paths-with-protocol normalize-path file-join jar-directory?]]
             [conveyor.pipeline :refer :all]
             [conveyor.strategy.interface :refer [get-asset get-logical-path get-digest-path]]
             [conveyor.strategy.runtime :refer [all-possible-output]]
@@ -10,57 +10,41 @@
 (defn append-to-key [m key value]
   (update-in m [key] #(conj % value)))
 
-(defn- base-dir [full-path sub-path]
-  (first (clj-str/split full-path (re-pattern sub-path) 2)))
-
 (defn directory-path [path]
   (let [directory (file path)]
     (when (.exists directory)
       (.getAbsolutePath directory))))
 
-(defn- normalize-resource-url [url]
-  (if (= "file" (.getProtocol url))
-    (directory-path (.getPath url))
-    (str url "/")))
-
-(defn resource-directory-path [directory-path resource-in-directory]
-  (let [with-leading-slash (str "/" resource-in-directory)
-        relative-path (str directory-path with-leading-slash)]
-    (when-let [resource-url (resource relative-path)]
-      (base-dir (normalize-resource-url resource-url) with-leading-slash))))
+(defn resource-directory-path [directory-path]
+  (when-let [resource-url (first (absolute-paths-with-protocol directory-path))]
+    (normalize-path resource-url)))
 
 (defn add-to-load-path [config path]
   (append-to-key config :load-paths path))
 
-(defn add-validated-resource-directory [config directory-path resource-in-directory]
-  (if-let [full-path (resource-directory-path directory-path resource-in-directory)]
-    (add-to-load-path config full-path)
-    (throw (IllegalArgumentException. (str "Could not find resource directory: " directory-path)))))
+(defn add-validated-resource-directory [config directory-path]
+  (when-let [full-path (resource-directory-path directory-path)]
+    (add-to-load-path config full-path)))
 
 (defn add-validated-directory [config path]
-  (if-let [full-path (directory-path path)]
-    (add-to-load-path config full-path)
-    (throw (IllegalArgumentException. (str "Could not find directory: " path)))))
+  (when-let [full-path (directory-path path)]
+    (add-to-load-path config full-path)))
 
-(defn- throw-unknown-load-path-type [type]
+(defn- throw-directory-not-found [path]
   (throw
-    (Exception.
+    (IllegalArgumentException.
       (format
-        "Unknown type of load-path: %s. Valid types are :resource-directory and :directory."
-        type))))
+        "Directory not found: %s. Must be an existing directory or resource directory."
+        path))))
 
-(defn- configure-load-paths [{:keys [load-paths] :as config}]
+(defn configure-load-paths [{:keys [load-paths] :as config}]
   (reduce
-    (fn [config {:keys [type path file-in-dir] :as load-path}]
-      (cond
-        (= :resource-directory type)
-        (add-validated-resource-directory config path file-in-dir)
-        (= :directory type)
-        (add-validated-directory config path)
-        (instance? String load-path)
-        (add-to-load-path config load-path)
-        :else
-        (throw-unknown-load-path-type type)))
+    (fn [config path]
+      (if (jar-directory? path)
+        (add-to-load-path config path)
+        (or (add-validated-directory config path)
+            (add-validated-resource-directory config path)
+            (throw-directory-not-found path))))
     (assoc config :load-paths [])
     load-paths))
 

@@ -2,7 +2,7 @@
   (:require [clojure.java.io :refer [resource]]
             [zweikopf.core :refer [ruby-require]]
             [sass.core]
-            [conveyor.config :refer [add-resource-directory-to-load-path]]))
+            [conveyor.config :refer [add-directory-to-load-path]]))
 
 (defn- resource-path [path]
   (.getPath (resource path)))
@@ -16,8 +16,8 @@
 (defn configure-compass [config]
   (init-conveyor-compass)
   (-> config
-    (add-resource-directory-to-load-path "compass-0.12.2/frameworks/compass/stylesheets" "_compass.scss")
-    (add-resource-directory-to-load-path "compass-0.12.2/frameworks/compass/templates" "ellipsis/ellipsis.sass")
-    (add-resource-directory-to-load-path "compass-0.12.2/frameworks/blueprint/stylesheets" "_blueprint.scss")
-    (add-resource-directory-to-load-path "compass-0.12.2/frameworks/blueprint/templates" "project/screen.sass")))
+    (add-directory-to-load-path "compass-0.12.2/frameworks/compass/stylesheets")
+    (add-directory-to-load-path "compass-0.12.2/frameworks/compass/templates")
+    (add-directory-to-load-path "compass-0.12.2/frameworks/blueprint/stylesheets")
+    (add-directory-to-load-path "compass-0.12.2/frameworks/blueprint/templates")))
 

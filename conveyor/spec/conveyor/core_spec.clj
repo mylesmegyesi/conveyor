@@ -3,6 +3,7 @@
             [clojure.java.io :refer [file]]
             [conveyor.core :refer :all]
             [conveyor.config :refer :all]
+            [conveyor.pipeline :refer :all]
             [conveyor.precompile :refer [precompile]]
             [conveyor.asset-body :refer [body-to-string]]
             [ring.mock.request :as mr])
@@ -20,15 +21,11 @@
   (context "resource-directory-path"
 
     (it "builds the full path to a jar resource directory"
-      (let [full-path (resource-directory-path "stylesheets" "test1.css")]
-        (should= ".test1 { color: white; }\n" (slurp (str full-path "/test1.css")))))
+      (let [full-path (resource-directory-path "stylesheets")]
+        (should= ".test1 { color: white; }\n" (slurp (str full-path "test1.css")))))
 
     (it "returns nil when the directory does not exist"
-      (should-be-nil (resource-directory-path "non_existant_dir" "test1.css")))
-
-    (it "returns nil when given resources does not exist"
-      (should-be-nil (resource-directory-path "stylesheets" "unknown")))
-
+      (should-be-nil (resource-directory-path "non_existant_dir")))
     )
 
   (context "directory-path"
@@ -45,13 +42,12 @@
   (context "add resource directory to load path"
 
     (it "adds valid resource directory to the load path"
-      (let [full-path (resource-directory-path "stylesheets" "test1.css")
-            new-config (add-validated-resource-directory {:load-paths []} "stylesheets" "test1.css")]
+      (let [full-path (resource-directory-path "stylesheets")
+            new-config (add-validated-resource-directory {:load-paths []} "stylesheets")]
         (should= [full-path] (:load-paths new-config))))
 
-    (it "throws an exception when the resource directory does not exist"
-      (should-throw IllegalArgumentException "Could not find resource directory: uknown-dir"
-                    (add-validated-resource-directory {:load-paths []} "uknown-dir" "test1.css")))
+    (it "returns nil when the resource directory does not exist"
+      (should-be-nil (add-validated-resource-directory {:load-paths []} "uknown-dir")))
 
     )
 
@@ -62,32 +58,45 @@
             new-config (add-validated-directory {:load-paths []} "test_fixtures/public/stylesheets")]
         (should= [full-path] (:load-paths new-config))))
 
-    (it "throws an exception when the directory does not exist"
-      (should-throw IllegalArgumentException "Could not find directory: uknown-dir"
-                    (add-validated-directory {:load-paths []} "uknown-dir")))
+    (it "returns nil when the directory does not exist"
+      (should-be-nil (add-validated-directory {:load-paths []} "uknown-dir")))
 
     )
+
+  (context "configure-load-paths"
+    (it "adds a directory"
+      (let [full-path (directory-path "test_fixtures/public/stylesheets")
+            new-config (configure-load-paths {:load-paths ["test_fixtures/public/stylesheets"]})]
+        (should= [full-path] (:load-paths new-config))))
+
+    (it "adds a resource directory"
+      (let [full-path (resource-directory-path "stylesheets")
+            new-config (configure-load-paths {:load-paths ["stylesheets"]})]
+        (should= [full-path] (:load-paths new-config))))
+
+    (it "throws an exception if the directory does not exist"
+      (should-throw IllegalArgumentException "Directory not found: unknown-dir. Must be an existing directory or resource directory."
+                    (configure-load-paths {:load-paths ["unknown-dir"]})))
+
+  )
 
   (context "initialize-config"
 
     (it "adds a resource directory path to the load path"
-      (let [full-path (resource-directory-path "stylesheets" "test1.css")
-            config (initialize-config {:load-paths [{:type :resource-directory
-                                                     :path "stylesheets"
-                                                     :file-in-dir "test1.css"}]})]
+      (let [full-path (resource-directory-path "stylesheets")
+            config (initialize-config {:load-paths ["stylesheets"]})]
         (should= [full-path] (:load-paths config))))
 
     (it "adds a directory path to the load path"
       (let [full-path (directory-path "test_fixtures/public/stylesheets")
-            config (initialize-config {:load-paths [{:type :directory
-                                                     :path "test_fixtures/public/stylesheets"}]})]
+            config (initialize-config {:load-paths ["test_fixtures/public/stylesheets"]})]
         (should= [full-path] (:load-paths config))))
 
-    (it "throws an exception for an unknown load path type"
+    (it "throws an exception for an unknown load path"
       (should-throw
         Exception
-        "Unknown type of load-path: :unknown-type. Valid types are :resource-directory and :directory."
-        (initialize-config {:load-paths [{:type :unknown-type}]})))
+        "Directory not found: unknown. Must be an existing directory or resource directory."
+        (initialize-config {:load-paths ["unknown"]})))
 
     (it "configures the prefix"
       (let [config (initialize-config {:prefix "/assets"})]
@@ -206,6 +215,12 @@
           (let [found-asset (find-asset "test1.js")]
             (should= "var test = 1;\n" (body-to-string (:body found-asset)))))
 
+        (it "finds multiple assets"
+          (prepare-asset ["test1.js" "test2.fake"])
+          (let [found-assets (find-assets ["test1.js" #"test2.*"])]
+            (should= "Some fake thing\n" (body-to-string (:body (first found-assets))))
+            (should= "var test = 1;\n" (body-to-string (:body (second found-assets))))))
+
         (it "returns a static file as a file"
           (prepare-asset "test1.js")
           (let [found-asset (find-asset "test1.js")]
@@ -259,7 +274,7 @@
               (should= "/test2.css" (asset-url "test2.css")))))
 
         (it "finds an asset with a resource directory on its load path"
-          (with-pipeline-config (add-resource-directory-to-load-path (pipeline-config) "stylesheets" "test1.css")
+          (with-pipeline-config (add-directory-to-load-path (pipeline-config) "stylesheets")
             (prepare-asset "test1.css")
             (let [asset (find-asset "test1.css")]
               (should= ".test1 { color: white; }\n" (body-to-string (:body asset)))

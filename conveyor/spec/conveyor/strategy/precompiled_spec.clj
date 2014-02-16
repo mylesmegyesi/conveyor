@@ -1,6 +1,7 @@
 (ns conveyor.strategy.precompiled-spec
   (:require [speclj.core :refer :all]
             [conveyor.core :refer :all]
+            [conveyor.asset-body :refer [body-to-string]]
             [conveyor.config :refer :all])
   (:import [java.io File]))
 
@@ -31,13 +32,14 @@
                             (add-prefix "/assets")
                             (set-manifest "test_fixtures/output/manifest2.edn"))
       (let [found-asset (find-asset "test1.js")]
-        (should= "/assets/test1.js" (:logical-path found-asset)))))
+        (should= "/test1.js" (:logical-path found-asset)))))
 
   (it "finds an asset in the output directory with a prefix"
     (with-pipeline-config (-> @config
                             (add-prefix "/assets")
                             (set-manifest "test_fixtures/output/manifest2.edn"))
       (let [found-asset (find-asset "test1.js")]
-        (should= "/assets/test1.js" (:logical-path found-asset)))))
+        (should= "/test1.js" (:logical-path found-asset))
+        (should (body-to-string (:body found-asset))))))
 
   )

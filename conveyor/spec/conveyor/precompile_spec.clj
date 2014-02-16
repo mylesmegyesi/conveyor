@@ -4,6 +4,7 @@
             [clojure.edn :refer [read-string] :rename {read-string read-edn}]
             [conveyor.core :refer :all]
             [conveyor.config :refer :all]
+            [conveyor.pipeline :refer :all]
             [conveyor.precompile :refer :all]
             [conveyor.file-utils :refer [read-file]])
   (:import [org.apache.commons.io FileUtils]

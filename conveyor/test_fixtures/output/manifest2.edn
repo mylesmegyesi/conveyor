@@ -1,6 +1,6 @@
 {
-  "test1.js" {:logical-path "/assets/test1.js"
-              :digest-path "/assets/test1-200368af90cc4c6f4f1ddf36f97a279e.js"
+  "test1.js" {:logical-path "/test1.js"
+              :digest-path "/test1-200368af90cc4c6f4f1ddf36f97a279e.js"
               :digest "200368af90cc4c6f4f1ddf36f97a279e"}}
 }
 

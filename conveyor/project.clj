@@ -7,6 +7,7 @@
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [digest "1.4.3"]
                  [commons-io "2.4"]
+                 [com.cemerick/pomegranate "0.2.0"]
                  [com.novemberain/pantomime "2.0.0"]]
 
   :profiles {:dev {:dependencies   [[speclj "2.9.1"]
